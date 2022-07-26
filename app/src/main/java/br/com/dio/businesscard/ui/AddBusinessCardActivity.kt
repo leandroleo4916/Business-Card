@@ -25,20 +25,30 @@ class AddBusinessCardActivity : AppCompatActivity() {
 
     private fun insertListeners() {
         binding.btnConfirm.setOnClickListener {
-            val businessCard = BusinessCard(
-                nome = binding.tilNome.editText?.text.toString(),
-                empresa = binding.tilEmpresa.editText?.text.toString(),
-                telefone = binding.tilTelefone.editText?.text.toString(),
-                email = binding.tilEmail.editText?.text.toString(),
-                fundoPersonalizado = binding.tilCor.editText?.text.toString()
-            )
-            mainViewModel.insert(businessCard)
-            Toast.makeText(this, R.string.label_show_success, Toast.LENGTH_SHORT).show()
-            finish()
+            val nome = binding.tilNome.editText?.text.toString()
+            val empresa = binding.tilEmpresa.editText?.text.toString()
+            val telefone = binding.tilTelefone.editText?.text.toString()
+            val email = binding.tilEmail.editText?.text.toString()
+            val fundoPersonalizado = binding.tilCor.editText?.text.toString()
+
+            if (nome.isEmpty() || empresa.isEmpty() || telefone.isEmpty() ||
+                    email.isEmpty() || fundoPersonalizado.isEmpty()) {
+                Toast.makeText(this, "Preencha todos os campos!", Toast.LENGTH_SHORT).show()
+            }
+            else {
+                val businessCard = BusinessCard(
+                    nome = nome,
+                    empresa = empresa,
+                    telefone = telefone,
+                    email = email,
+                    fundoPersonalizado = fundoPersonalizado
+                )
+                mainViewModel.insert(businessCard)
+                Toast.makeText(this, R.string.label_show_success, Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
 
-        binding.btnClose.setOnClickListener {
-            finish()
-        }
+        binding.btnClose.setOnClickListener { finish() }
     }
 }
