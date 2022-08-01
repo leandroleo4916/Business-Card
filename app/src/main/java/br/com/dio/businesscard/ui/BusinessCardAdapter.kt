@@ -26,9 +26,8 @@ class BusinessCardAdapter :
         holder.bind(getItem(position))
     }
 
-    inner class ViewHolder(
-        private val binding: ItemBusinessCardBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder (private val binding: ItemBusinessCardBinding):
+        RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: BusinessCard) {
             binding.tvNome.text = item.nome
@@ -36,9 +35,7 @@ class BusinessCardAdapter :
             binding.tvEmail.text = item.email
             binding.tvNomeEmpresa.text = item.empresa
             binding.cdContent.setCardBackgroundColor(Color.parseColor(item.fundoPersonalizado))
-            binding.cdContent.setOnClickListener {
-                listenerShare(it)
-            }
+            binding.cdContent.setOnClickListener { listenerShare(it) }
         }
     }
 

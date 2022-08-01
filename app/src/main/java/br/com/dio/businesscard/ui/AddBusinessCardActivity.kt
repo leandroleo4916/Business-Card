@@ -1,9 +1,12 @@
 package br.com.dio.businesscard.ui
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings.Global.getString
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import br.com.dio.businesscard.App
 import br.com.dio.businesscard.R
 import br.com.dio.businesscard.data.BusinessCard
@@ -24,6 +27,10 @@ class AddBusinessCardActivity : AppCompatActivity() {
     }
 
     private fun insertListeners() {
+        binding.tilCor.editText?.doAfterTextChanged {
+            val intent = Intent(this, SelectColorActivity::class.java)
+            startActivity(intent)
+        }
         binding.btnConfirm.setOnClickListener {
             val nome = binding.tilNome.editText?.text.toString()
             val empresa = binding.tilEmpresa.editText?.text.toString()
@@ -50,5 +57,14 @@ class AddBusinessCardActivity : AppCompatActivity() {
         }
 
         binding.btnClose.setOnClickListener { finish() }
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        val intent = intent.extras
+        val color = intent?.getString("color")
+        if (color != null){
+            binding.tilCor.editText?.setText(color)
+        }
     }
 }
