@@ -1,20 +1,22 @@
 package br.com.dio.businesscard.ui
 
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings.Global.getString
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
 import br.com.dio.businesscard.App
 import br.com.dio.businesscard.R
 import br.com.dio.businesscard.data.BusinessCard
 import br.com.dio.businesscard.databinding.ActivityAddBusinessCardBinding
+import br.com.dio.businesscard.databinding.SelectColorBinding
 
 class AddBusinessCardActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityAddBusinessCardBinding.inflate(layoutInflater) }
+    private val bindingColor by lazy { SelectColorBinding.inflate(layoutInflater) }
+    private lateinit var color: String
 
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModelFactory((application as App).repository)
@@ -28,8 +30,7 @@ class AddBusinessCardActivity : AppCompatActivity() {
 
     private fun insertListeners() {
         binding.tilCor.editText?.doAfterTextChanged {
-            val intent = Intent(this, SelectColorActivity::class.java)
-            startActivity(intent)
+            createSelectColor()
         }
         binding.btnConfirm.setOnClickListener {
             val nome = binding.tilNome.editText?.text.toString()
@@ -59,12 +60,39 @@ class AddBusinessCardActivity : AppCompatActivity() {
         binding.btnClose.setOnClickListener { finish() }
     }
 
-    override fun onRestart() {
-        super.onRestart()
-        val intent = intent.extras
-        val color = intent?.getString("color")
-        if (color != null){
-            binding.tilCor.editText?.setText(color)
+    private fun createSelectColor(){
+        val inflate = layoutInflater.inflate(R.layout.select_color, null)
+        val dialog = createDialog("Selecione a cor")
+        dialog.setView(inflate)
+        dialog.setPositiveButton(getString(R.string.selecionar)) { _, _ ->
+            clickColor()
+        }
+    }
+
+    private fun createDialog(message: String): AlertDialog.Builder {
+        val builder = this.let { AlertDialog.Builder(it) }
+        builder.setTitle(message)
+        builder.setCancelable(false)
+        return builder
+    }
+
+    private fun clickColor() {
+        bindingColor.run {
+            colorOne.setOnClickListener { color = it.contentDescription.toString() }
+            colorTwo.setOnClickListener { color = it.contentDescription.toString() }
+            colorThree.setOnClickListener { color = it.contentDescription.toString() }
+            colorFour.setOnClickListener { color = it.contentDescription.toString() }
+            colorFive.setOnClickListener { color = it.contentDescription.toString() }
+            colorSix.setOnClickListener { color = it.contentDescription.toString() }
+            colorSeven.setOnClickListener { color = it.contentDescription.toString() }
+            colorEight.setOnClickListener { color = it.contentDescription.toString() }
+            colorNine.setOnClickListener { color = it.contentDescription.toString() }
+            colorTen.setOnClickListener { color = it.contentDescription.toString() }
+            colorEleven.setOnClickListener { color = it.contentDescription.toString() }
+            colorTwelve.setOnClickListener { color = it.contentDescription.toString() }
+            colorThirteen.setOnClickListener { color = it.contentDescription.toString() }
+            colorFourteen.setOnClickListener { color = it.contentDescription.toString() }
+            colorFifteen.setOnClickListener { color = it.contentDescription.toString() }
         }
     }
 }
