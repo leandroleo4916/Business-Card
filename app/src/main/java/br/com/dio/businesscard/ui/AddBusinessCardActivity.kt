@@ -1,6 +1,7 @@
 package br.com.dio.businesscard.ui
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -26,6 +27,7 @@ class AddBusinessCardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         insertListeners()
+        clickColor()
     }
 
     private fun insertListeners() {
@@ -65,7 +67,7 @@ class AddBusinessCardActivity : AppCompatActivity() {
         val dialog = createDialog("Selecione a cor")
         dialog.setView(inflate)
         dialog.setPositiveButton(getString(R.string.selecionar)) { _, _ ->
-            clickColor()
+            binding.tilCor.editText?.text ?: color
         }
     }
 
@@ -78,7 +80,7 @@ class AddBusinessCardActivity : AppCompatActivity() {
 
     private fun clickColor() {
         bindingColor.run {
-            colorOne.setOnClickListener { color = it.contentDescription.toString() }
+            colorOne.setOnClickListener { selectColor(it) }
             colorTwo.setOnClickListener { color = it.contentDescription.toString() }
             colorThree.setOnClickListener { color = it.contentDescription.toString() }
             colorFour.setOnClickListener { color = it.contentDescription.toString() }
@@ -94,5 +96,10 @@ class AddBusinessCardActivity : AppCompatActivity() {
             colorFourteen.setOnClickListener { color = it.contentDescription.toString() }
             colorFifteen.setOnClickListener { color = it.contentDescription.toString() }
         }
+    }
+
+    private fun selectColor(it: View) {
+        color = it.contentDescription.toString()
+        Toast.makeText(this, "Cor selecionada!", Toast.LENGTH_SHORT).show()
     }
 }
