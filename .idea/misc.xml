@@ -3,6 +3,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/LEANDRO/AndroidStudioProjects/BusinessCard/app/src/main/res/drawable-v24/ic_add.xml" value="0.112" />
         <entry key="..\:/Users/LEANDRO/AndroidStudioProjects/BusinessCard/app/src/main/res/drawable/ic_close.xml" value="0.147" />
         <entry key="..\:/Users/LEANDRO/AndroidStudioProjects/BusinessCard/app/src/main/res/layout/activity_add_business_card.xml" value="0.2727272668160684" />
         <entry key="..\:/Users/LEANDRO/AndroidStudioProjects/BusinessCard/app/src/main/res/layout/activity_main.xml" value="0.17481884057971014" />
