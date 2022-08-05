@@ -17,7 +17,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BusinessCard">
         <activity android:name=".ui.AddBusinessCardActivity" />
-        <activity android:name=".ui.SelectColorActivity" />
         <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
