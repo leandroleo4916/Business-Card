@@ -10,7 +10,4 @@
     <string name="label_confirmar">Confirmar</string>
     <string name="label_show_success">Registro inserido com sucesso.</string>
     <string name="label_share_to">Compartilhar</string>
-    <string name="escolha_a_cor">Escolha uma cor</string>
-    <string name="selecionar">Selecionar</string>
-    <string name="cor_selecionada">Cor selecionada</string>
 </resources>
