@@ -14,8 +14,9 @@ class MainActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
     private val getEncodeString = EncodeString()
+    private val calculateTotal = CalculateDados()
     private var sizeTotal = 0
-    private var anoSoma = 2022
+    private var anoSoma = 2015
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         binding.run {
             textProcesso.setOnClickListener {
                 binding.textProcesso.text = "Processando..."
-                searchDoc()
+                calculateTotal.searchTotal()
             }
         }
     }
@@ -66,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                 list.add(if (div[7] == "") "Não foi informado" else div[7])
                 list.add(if (div[8] == "") "Não foi informado" else div[8])
                 list.add(if (div[9] == "") "Não foi informado" else div[9])
-                list.add(if (div[10]== "") "Não foi informado" else div[10].split("\",")[0])
+                list.add(if (div[10]== "") "Não foi informado" else div[10].split("\"")[0])
 
                 sizeTotal += 1
                 binding.textTotalProcesso.text = "$sizeTotal processados"
@@ -192,17 +193,18 @@ class MainActivity : AppCompatActivity() {
                     codDocumento = "\"$i\""
                     positionCod += 11
                     position += 1
-                    listC =
-                        """{$anoV:$ano, $mesV:$mes, $senadorV:$senador, $tipoDespesaV:$tipoDespesa, 
+
+                    listC = """{$anoV:$ano, $mesV:$mes, $senadorV:$senador, $tipoDespesaV:$tipoDespesa, 
                     $cnpjCpfV:$cnpjCpf, $fornecedorV:$fornecedor, $documentoV:$documento, 
                     $dataV:$data, $detalhamentoV:$detalhamento, $valorReembolsadoV:$valorReembolsado, 
                     $codDocumentoV:$codDocumento}"""
+
                     listD.add(listC)
                     if (position == size) {
                         rec(listD.toString(), name)
                         anoSoma += 1
                         if (anoSoma != 2023){
-                            searchDoc()
+                            //searchDoc()
                         }
                     }
                 }
@@ -216,7 +218,7 @@ class MainActivity : AppCompatActivity() {
             val codi = deleteAccent(nome)
             val arq = File(Environment.getExternalStorageDirectory(), "/$anoSoma/$codi")
             val fos = FileOutputStream(arq)
-            fos.write("{\"gastosSenador\": $text".toByteArray())
+            fos.write("{\"gastosSenador\": $text}".toByteArray())
             fos.flush()
             fos.close()
         } catch (e: java.lang.Exception) { }
