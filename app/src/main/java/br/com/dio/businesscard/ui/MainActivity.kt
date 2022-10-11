@@ -3,9 +3,21 @@ package br.com.dio.businesscard.ui
 import android.Manifest
 import android.os.Bundle
 import android.os.Environment
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import br.com.dio.businesscard.databinding.ActivityMainBinding
+import br.com.dio.businesscard.ui.dataclass.Dado
+import br.com.dio.businesscard.ui.dataclass.DadoDespesas
+import br.com.dio.businesscard.ui.dataclass.Despesas
+import br.com.dio.businesscard.ui.dataclass.NomeGastoTotal
+import br.com.dio.businesscard.ui.remote.Retrofit
+import br.com.dio.businesscard.ui.remote.ApiServiceIdDespesas
+import br.com.dio.businesscard.ui.repository.ResultRequest
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.*
 import java.text.Normalizer
 import java.util.regex.Pattern
@@ -17,6 +29,21 @@ class MainActivity : AppCompatActivity() {
     private val calculateTotal = CalculateDados()
     private var sizeTotal = 0
     private var anoSoma = 2015
+    //----------------------------------//
+    private val viewModel: DespesasViewModel by viewModel()
+    private val viewModelCamara: CamaraViewModel by viewModel()
+    private var listDeputado: ArrayList<Dado> = arrayListOf()
+    private var listGasto: ArrayList<DadoDespesas> = arrayListOf()
+    private var listNomeGasto: ArrayList<NomeGastoTotal> = arrayListOf()
+    private var gastoPorDeputado = 0
+    private var nome = ""
+    private var numberNote = 0
+    private var position = 0
+    private var sizeCount = 0
+    private var page = 1
+    private var year = 2022
+    private var id = ""
+    //-----------------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         binding.run {
             textProcesso.setOnClickListener {
                 binding.textProcesso.text = "Processando..."
-                calculateTotal.searchTotal()
+                observerListDeputado()
             }
         }
     }
@@ -235,5 +262,142 @@ class MainActivity : AppCompatActivity() {
             ret += it
         }
         return ret
+    }
+
+    // Busca lsita de deputados
+    private fun observerListDeputado() {
+        viewModelCamara.searchData(ordenarPor = "nome").observe(this) {
+            it?.let { result ->
+                when (result) {
+                    is ResultRequest.Success -> {
+                        result.dado?.let { deputados ->
+                            listDeputado = deputados.dados as ArrayList
+                            sizeCount = listDeputado.size
+                            searchGasto()
+                        }
+                    }
+                    is ResultRequest.Error -> {
+                        result.exception.message?.let { it -> }
+                    }
+                    is ResultRequest.ErrorConnection -> {
+                        result.exception.message?.let { it -> }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun searchGasto(){
+        if (position+1 != sizeCount){
+            id = listDeputado[position].id.toString()
+            nome = listDeputado[position].nome
+            position += 1
+            observer()
+        }
+        else toList()
+    }
+
+    // Busca gasto por deputado
+    private fun observer(){
+
+        val retrofit = Retrofit.createService(ApiServiceIdDespesas::class.java)
+        val call: Call<Despesas> = retrofit.getDespesas(id, year.toString(), 100, page)
+
+        call.enqueue(object: Callback<Despesas> {
+            override fun onResponse(call: Call<Despesas>, despesas: Response<Despesas>){
+                val despesa = despesas.body()
+                if (despesa?.dados?.isNotEmpty() == true){
+                    page += 1
+                    listGasto += despesa.dados
+                    val size = despesa.dados.size
+                    numberNote += size
+                    if (size >= 100) {
+                        observer()
+                    }
+                    else {
+                        if (year != 2014) {
+                            page = 1
+                            year -= 1
+                            observer()
+                        }
+                        else {
+                            year = 2022
+                            calculandoNotas()
+                            searchGasto()
+                        }
+                    }
+                }
+                else{
+                    if (year != 2014) {
+                        page = 1
+                        year = 2022
+                        calculandoNotas()
+                        searchGasto()
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<Despesas>, t: Throwable) {
+                Toast.makeText(this@MainActivity, t.message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
+    private fun calculandoNotas(){
+        listGasto.forEach {
+            gastoPorDeputado += it.valorDocumento.toInt()
+        }
+        listNomeGasto.add(NomeGastoTotal(nome, gastoPorDeputado))
+        gastoPorDeputado = 0
+    }
+
+    private fun toList() {
+
+        var ano2015 = 0
+        var ano2016 = 0
+        var ano2017 = 0
+        var ano2018 = 0
+        var ano2019 = 0
+        var ano2020 = 0
+        var ano2021 = 0
+        var ano2022 = 0
+
+        var manutencao = 0
+        var combustivel = 0
+        var passagens = 0
+        var divulgacao = 0
+        var telefonia = 0
+        var servicos = 0
+        var alimentacao = 0
+        var outros = 0
+
+        var totalGeral = 0
+
+        listGasto.forEach{
+
+            val valor = it.valorDocumento.toInt()
+            totalGeral += valor
+
+            when (it.tipoDespesa.substring(0,5)){
+                "MANUT" -> manutencao += valor
+                "COMBU" -> combustivel += valor
+                "PASSA" -> passagens += valor
+                "DIVUL" -> divulgacao += valor
+                "TELEF" -> telefonia += valor
+                "SERVI" -> servicos += valor
+                "FORNE" -> alimentacao += valor
+                else -> outros += valor
+            }
+            when (year) {
+                2022 -> ano2022 += valor
+                2021 -> ano2021 += valor
+                2020 -> ano2020 += valor
+                2019 -> ano2019 += valor
+                2018 -> ano2018 += valor
+                2017 -> ano2017 += valor
+                2016 -> ano2016 += valor
+                2015 -> ano2015 += valor
+            }
+        }
     }
 }

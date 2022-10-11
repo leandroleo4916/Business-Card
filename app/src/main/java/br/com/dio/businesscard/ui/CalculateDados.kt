@@ -1,6 +1,7 @@
 package br.com.dio.businesscard.ui
 
 import android.os.Environment
+import br.com.dio.businesscard.ui.dataclass.Senador
 import java.io.*
 
 class CalculateDados {

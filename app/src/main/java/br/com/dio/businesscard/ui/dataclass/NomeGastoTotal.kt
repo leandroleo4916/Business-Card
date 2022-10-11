@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.dataclass
 
 data class NomeGastoTotal(
     var nome: String,
