@@ -7,7 +7,7 @@ import java.io.*
 class CalculateDados {
 
     private val getEncodeString = EncodeString()
-    private val addValue: AddValue = AddValue()
+    private val calculoGeralSenador: CalculoGeralSenador = CalculoGeralSenador()
     private val listComplet: ArrayList<Senador> = arrayListOf()
     private var anoSoma = 2015
 
@@ -35,7 +35,7 @@ class CalculateDados {
                     listComplet.add(Senador(ano, mes, nome, tipo, value))
                 }
                 anoSoma += 1
-                if (anoSoma == 2023) addValue.process(listComplet)
+                if (anoSoma == 2023) calculoGeralSenador.process(listComplet)
 
             } catch (e: java.lang.Exception) { }
         }

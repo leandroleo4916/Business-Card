@@ -8,7 +8,7 @@ import java.io.FileOutputStream
 import java.text.Normalizer
 import java.util.regex.Pattern
 
-class AddValue {
+class CalculoGeralSenador {
 
     val totalGeral = """"totalGeral""""
     val notasGeral = """"totalNotas""""
@@ -136,7 +136,7 @@ class AddValue {
         s.forEach {
             val size = it.length
             nomeP +=
-                if (it == "DE" || it == "DA"){
+                if (it == "DE" || it == "DA"|| it == "DOS"){
                     val i = it.lowercase()
                     "$i "
                 } else {

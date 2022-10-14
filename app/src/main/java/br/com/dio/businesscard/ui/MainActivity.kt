@@ -41,8 +41,31 @@ class MainActivity : AppCompatActivity() {
     private var position = 0
     private var sizeCount = 0
     private var page = 1
-    private var year = 2022
+    private var year = 2015
     private var id = ""
+    private var listTotalGeral = ""
+    private var textTotal = 0
+
+    var ano2015 = 0
+    var ano2016 = 0
+    var ano2017 = 0
+    var ano2018 = 0
+    var ano2019 = 0
+    var ano2020 = 0
+    var ano2021 = 0
+    var ano2022 = 0
+
+    var manutencao = 0
+    var combustivel = 0
+    var passagens = 0
+    var divulgacao = 0
+    var telefonia = 0
+    var servicos = 0
+    var alimentacao = 0
+    var outros = 0
+
+    var totalGeral = 0
+    val listNomePrint: ArrayList<String> = arrayListOf()
     //-----------------------------------
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -287,16 +310,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun searchGasto(){
-        if (position+1 != sizeCount){
-            id = listDeputado[position].id.toString()
-            nome = listDeputado[position].nome
-            position += 1
-            observer()
-        }
-        else toList()
-    }
-
     // Busca gasto por deputado
     private fun observer(){
 
@@ -315,24 +328,32 @@ class MainActivity : AppCompatActivity() {
                         observer()
                     }
                     else {
-                        if (year != 2014) {
+                        if (year == 2022) {
                             page = 1
-                            year -= 1
-                            observer()
+                            year = 2015
+                            if (listGasto.size != 0){
+                                calculandoNotas()
+                                listGasto = arrayListOf()
+                            }
                         }
                         else {
-                            year = 2022
-                            calculandoNotas()
-                            searchGasto()
+                            page = 1
+                            year += 1
+                            observer()
                         }
                     }
                 }
                 else{
-                    if (year != 2014) {
+                    if (year != 2022) {
                         page = 1
-                        year = 2022
+                        year += 1
+                        observer()
+                    }
+                    else {
+                        page = 1
+                        year = 2015
                         calculandoNotas()
-                        searchGasto()
+                        listGasto = arrayListOf()
                     }
                 }
             }
@@ -344,34 +365,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun calculandoNotas(){
+        gastoPorDeputado = 0
         listGasto.forEach {
-            gastoPorDeputado += it.valorDocumento.toInt()
+            if (it.valorDocumento.toString() != "" && it.valorDocumento.toInt() > 0){
+                gastoPorDeputado += it.valorDocumento.toInt()
+            }
         }
         listNomeGasto.add(NomeGastoTotal(nome, gastoPorDeputado))
-        gastoPorDeputado = 0
+        toList()
+        println(NomeGastoTotal(nome, gastoPorDeputado))
+
+        textTotal += 1
+        binding.textNomeEGasto.text = "$nome, $gastoPorDeputado"
+        binding.textTotalProcesso.text = textTotal.toString()
+        binding.textTotalGeral.text = totalGeral.toString()
+
+        searchGasto()
+    }
+
+    private fun searchGasto(){
+        if (position != sizeCount){
+            id = listDeputado[position].id.toString()
+            nome = listDeputado[position].nome
+            position += 1
+            observer()
+        }
+        else recDeputado()
     }
 
     private fun toList() {
-
-        var ano2015 = 0
-        var ano2016 = 0
-        var ano2017 = 0
-        var ano2018 = 0
-        var ano2019 = 0
-        var ano2020 = 0
-        var ano2021 = 0
-        var ano2022 = 0
-
-        var manutencao = 0
-        var combustivel = 0
-        var passagens = 0
-        var divulgacao = 0
-        var telefonia = 0
-        var servicos = 0
-        var alimentacao = 0
-        var outros = 0
-
-        var totalGeral = 0
 
         listGasto.forEach{
 
@@ -399,5 +421,37 @@ class MainActivity : AppCompatActivity() {
                 2015 -> ano2015 += valor
             }
         }
+    }
+
+    private fun recDeputado() {
+
+        val totalGeralV = """"totalGeral""""
+        val notasGeral = """"totalNotas""""
+        val manutencaoV = """"manutencao""""
+        val combustivelV = """"combustivel""""
+        val passagensV = """"passagens""""
+        val divulgacaoV = """"divulgacao""""
+        val telefoniaV = """"telefonia""""
+        val servicosV = """"servicos""""
+        val alimentacaoV = """"alimentacao""""
+        val outrosV = """"outros""""
+
+        listNomeGasto.forEach {
+            listNomePrint.add("""{"nome":"${it.nome}", "gasto":"${it.gasto}"}""")
+            println(it.nome + "-" + it.gasto)
+        }
+
+        listTotalGeral = """{"gastoGeral": {$totalGeralV:"$totalGeral", $notasGeral:"$numberNote", 
+             $manutencaoV:"$manutencao", $combustivelV:"$combustivel", $passagensV:"$passagens", 
+             $divulgacaoV:"$divulgacao", $telefoniaV:"$telefonia", $servicosV:"$servicos",
+             $alimentacaoV:"$alimentacao", $outrosV:"$outros", "listDeputado": $listNomePrint]}"""
+
+        try {
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/geral")
+            val fos = FileOutputStream(arq)
+            fos.write(listTotalGeral.toByteArray())
+            fos.flush()
+            fos.close()
+        } catch (e: java.lang.Exception) { }
     }
 }
