@@ -33,40 +33,59 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: DespesasViewModel by viewModel()
     private val viewModelCamara: CamaraViewModel by viewModel()
     private var listDeputado: ArrayList<Dado> = arrayListOf()
-    private var listGasto: ArrayList<DadoDespesas> = arrayListOf()
+    private var listGastoPorDeputado: ArrayList<DadoDespesas> = arrayListOf()
     private var listNomeGasto: ArrayList<NomeGastoTotal> = arrayListOf()
-    private var gastoPorDeputado = 0
+    private var listNomeGastoRanking: ArrayList<NomeGastoTotal> = arrayListOf()
+    private var idNome = ""
     private var nome = ""
-    private var numberNote = 0
-    private var position = 0
+    private var foto = ""
+    private var partido = ""
+    private var estado = ""
+    private var numberNoteTotal = 0
+    private var numberNoteAno = 0
     private var sizeCount = 0
     private var page = 1
     private var year = 2015
     private var id = ""
-    private var listTotalGeral = ""
-    private var textTotal = 0
-
-    var ano2015 = 0
-    var ano2016 = 0
-    var ano2017 = 0
-    var ano2018 = 0
-    var ano2019 = 0
-    var ano2020 = 0
-    var ano2021 = 0
-    var ano2022 = 0
 
     var manutencao = 0
     var combustivel = 0
+    var assinatura = 0
     var passagens = 0
     var divulgacao = 0
     var telefonia = 0
-    var servicos = 0
+    var postais = 0
     var alimentacao = 0
+    var hospedagem = 0
+    var taxi = 0
+    var locacao = 0
+    var consultoria = 0
+    var seguranca = 0
+    var curso = 0
     var outros = 0
 
-    var totalGeral = 0
-    val listNomePrint: ArrayList<String> = arrayListOf()
-    //-----------------------------------
+    var manutencaoT = 0
+    var combustivelT = 0
+    var assinaturaT = 0
+    var passagensT = 0
+    var divulgacaoT = 0
+    var telefoniaT = 0
+    var postaisT = 0
+    var alimentacaoT = 0
+    var hospedagemT = 0
+    var taxiT = 0
+    var locacaoT = 0
+    var consultoriaT = 0
+    var segurancaT = 0
+    var cursoT = 0
+    var outrosT = 0
+
+    var totalGeralAno = 0
+    var totalGeralSoma = 0
+    var listNomePrint: ArrayList<String> = arrayListOf()
+    var countDeputado = 0
+
+    //-----------------------------------//
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,8 +109,11 @@ class MainActivity : AppCompatActivity() {
     private fun insertListeners() {
         binding.run {
             textProcesso.setOnClickListener {
-                binding.textProcesso.text = "Processando..."
+                binding.textProcesso.text = "Processando dados..."
                 observerListDeputado()
+            }
+            textProcessoSen.setOnClickListener{
+                binding.textProcessoSen.text = "Processando dados..."
             }
         }
     }
@@ -122,7 +144,7 @@ class MainActivity : AppCompatActivity() {
                 sizeTotal += 1
                 binding.textTotalProcesso.text = "$sizeTotal processados"
             }
-            download(list)
+            //download(list)
 
         } catch (e: java.lang.Exception) { }
 
@@ -197,7 +219,7 @@ class MainActivity : AppCompatActivity() {
                             name = i
                             namePrint = i
                         } else {
-                            rec(listD.toString(), name)
+                            //rec(listD.toString(), name)
                             listD = arrayListOf()
                             name = i
                             namePrint = i
@@ -251,7 +273,7 @@ class MainActivity : AppCompatActivity() {
 
                     listD.add(listC)
                     if (position == size) {
-                        rec(listD.toString(), name)
+                        //rec(listD.toString(), name)
                         anoSoma += 1
                         if (anoSoma != 2023){
                             //searchDoc()
@@ -281,13 +303,11 @@ class MainActivity : AppCompatActivity() {
         val pattern: Pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
         val text = pattern.matcher(nfdNormalizedString).replaceAll("")
         val nome = text.split(" ")
-        nome.forEach{
-            ret += it
-        }
+        nome.forEach{ ret += it }
         return ret
     }
 
-    // Busca lsita de deputados
+    // Busca lista de deputados
     private fun observerListDeputado() {
         viewModelCamara.searchData(ordenarPor = "nome").observe(this) {
             it?.let { result ->
@@ -296,18 +316,34 @@ class MainActivity : AppCompatActivity() {
                         result.dado?.let { deputados ->
                             listDeputado = deputados.dados as ArrayList
                             sizeCount = listDeputado.size
-                            searchGasto()
+                            getInfoDeputado()
                         }
                     }
                     is ResultRequest.Error -> {
+                        observerListDeputado()
                         result.exception.message?.let { it -> }
                     }
                     is ResultRequest.ErrorConnection -> {
+                        observerListDeputado()
                         result.exception.message?.let { it -> }
                     }
                 }
             }
         }
+    }
+
+    // Pega info de cada deputado e faz busca dos gastos -> observer()
+    private fun getInfoDeputado(){
+        if (countDeputado <= sizeCount){
+            id = listDeputado[countDeputado].id.toString()
+            idNome = listDeputado[countDeputado].id.toString()
+            nome = listDeputado[countDeputado].nome
+            foto = listDeputado[countDeputado].urlFoto
+            partido = listDeputado[countDeputado].siglaPartido
+            estado = listDeputado[countDeputado].siglaUf
+            observer()
+        }
+        else recDeputado()
     }
 
     // Busca gasto por deputado
@@ -318,140 +354,245 @@ class MainActivity : AppCompatActivity() {
 
         call.enqueue(object: Callback<Despesas> {
             override fun onResponse(call: Call<Despesas>, despesas: Response<Despesas>){
-                val despesa = despesas.body()
-                if (despesa?.dados?.isNotEmpty() == true){
-                    page += 1
-                    listGasto += despesa.dados
-                    val size = despesa.dados.size
-                    numberNote += size
-                    if (size >= 100) {
-                        observer()
-                    }
-                    else {
-                        if (year == 2022) {
-                            page = 1
-                            year = 2015
-                            if (listGasto.size != 0){
-                                calculandoNotas()
-                                listGasto = arrayListOf()
+                when (despesas.code()){
+                    200 -> {
+                        val despesa = despesas.body()
+                        if (despesa != null){
+                            listGastoPorDeputado += despesa.dados
+                            val size = despesa.dados.size
+                            numberNoteTotal += size
+                            numberNoteAno += size
+
+                            if (size >= 100) {
+                                page += 1
+                                observer()
+                            }
+                            else {
+                                getValuePerNoteType()
+                                page = 1
                             }
                         }
-                        else {
-                            page = 1
-                            year += 1
-                            observer()
-                        }
                     }
-                }
-                else{
-                    if (year != 2022) {
-                        page = 1
-                        year += 1
-                        observer()
-                    }
-                    else {
-                        page = 1
-                        year = 2015
-                        calculandoNotas()
-                        listGasto = arrayListOf()
+                    429 -> observer()
+                    else -> {
+                        Toast.makeText(application, despesas.message(), Toast.LENGTH_LONG).show()
                     }
                 }
             }
-
             override fun onFailure(call: Call<Despesas>, t: Throwable) {
-                Toast.makeText(this@MainActivity, t.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(application, t.message, Toast.LENGTH_LONG).show()
             }
         })
     }
 
-    private fun calculandoNotas(){
-        gastoPorDeputado = 0
-        listGasto.forEach {
-            if (it.valorDocumento.toString() != "" && it.valorDocumento.toInt() > 0){
-                gastoPorDeputado += it.valorDocumento.toInt()
+    // Pega valor de cada nota e soma total de gastos de todos os deputados nos respectivos anos
+    // Calcula e adiciona numa lista os gastos de cada deputado
+    private fun getValuePerNoteType() {
+
+        var gastoPorDeputado = 0
+        listGastoPorDeputado.forEach{
+
+            if (it.valorDocumento.toString() != "" && it.valorDocumento > 0){
+                val valor = it.valorDocumento.toInt()
+                totalGeralAno += valor
+                totalGeralSoma += valor
+                gastoPorDeputado += valor
+
+                when (it.tipoDespesa) {
+                    "MANUTENÇÃO DE ESCRITÓRIO DE APOIO À ATIVIDADE PARLAMENTAR" -> {
+                        manutencao += valor
+                        manutencaoT += valor
+                    }
+                    "COMBUSTÍVEIS E LUBRIFICANTES." -> {
+                        combustivel += valor
+                        combustivelT += valor
+                    }
+                    "DIVULGAÇÃO DA ATIVIDADE PARLAMENTAR." -> {
+                        divulgacao += valor
+                        divulgacaoT += valor
+                    }
+                    "ASSINATURA DE PUBLICAÇÕES" -> {
+                        assinatura += valor
+                        assinaturaT += valor
+                    }
+                    "PASSAGEM AÉREA - REEMBOLSO" -> {
+                        passagens += valor
+                        passagensT += valor
+                    }
+                    "PASSAGEM AÉREA - SIGEPA" -> {
+                        passagens += valor
+                        passagensT += valor
+                    }
+                    "PASSAGEM AÉREA - RPA" -> {
+                        passagens += valor
+                        passagensT += valor
+                    }
+                    "PASSAGENS TERRESTRES, MARÍTIMAS OU FLUVIAIS" -> {
+                        passagens += valor
+                        passagensT += valor
+                    }
+                    "TELEFONIA" -> {
+                        telefonia += valor
+                        telefoniaT += valor
+                    }
+                    "SERVIÇOS POSTAIS" -> {
+                        postais += valor
+                        postaisT += valor
+                    }
+                    "FORNECIMENTO DE ALIMENTAÇÃO DO PARLAMENTAR" -> {
+                        alimentacao += valor
+                        alimentacaoT += valor
+                    }
+                    "HOSPEDAGEM ,EXCETO DO PARLAMENTAR NO DISTRITO FEDERAL." -> {
+                        hospedagem += valor
+                        hospedagemT += valor
+                    }
+                    "SERVIÇO DE TÁXI, PEDÁGIO E ESTACIONAMENTO" -> {
+                        taxi += valor
+                        taxiT += valor
+                    }
+                    "LOCAÇÃO OU FRETAMENTO DE VEÍCULOS AUTOMOTORES" -> {
+                        locacao += valor
+                        locacaoT += valor
+                    }
+                    "CONSULTORIAS, PESQUISAS E TRABALHOS TÉCNICOS." -> {
+                        consultoria += valor
+                        consultoriaT += valor
+                    }
+                    "SERVIÇO DE SEGURANÇA PRESTADO POR EMPRESA ESPECIALIZADA." -> {
+                        seguranca += valor
+                        segurancaT += valor
+                    }
+                    "PARTICIPAÇÃO EM CURSO, PALESTRA OU EVENTO SIMILAR" -> {
+                        curso += valor
+                        cursoT += valor
+                    }
+                    else -> {
+                        outros += valor
+                        outrosT += valor
+                    }
+                }
             }
         }
-        listNomeGasto.add(NomeGastoTotal(nome, gastoPorDeputado))
-        toList()
-        println(NomeGastoTotal(nome, gastoPorDeputado))
+        listNomeGasto.add(NomeGastoTotal(id, nome, foto, gastoPorDeputado, partido, estado))
 
-        textTotal += 1
-        binding.textNomeEGasto.text = "$nome, $gastoPorDeputado"
-        binding.textTotalProcesso.text = textTotal.toString()
-        binding.textTotalGeral.text = totalGeral.toString()
-
-        searchGasto()
-    }
-
-    private fun searchGasto(){
-        if (position != sizeCount){
-            id = listDeputado[position].id.toString()
-            nome = listDeputado[position].nome
-            position += 1
-            observer()
+        if (year != 2015){
+            listNomeGastoRanking[countDeputado].gasto += gastoPorDeputado
         }
-        else recDeputado()
-    }
-
-    private fun toList() {
-
-        listGasto.forEach{
-
-            val valor = it.valorDocumento.toInt()
-            totalGeral += valor
-
-            when (it.tipoDespesa.substring(0,5)){
-                "MANUT" -> manutencao += valor
-                "COMBU" -> combustivel += valor
-                "PASSA" -> passagens += valor
-                "DIVUL" -> divulgacao += valor
-                "TELEF" -> telefonia += valor
-                "SERVI" -> servicos += valor
-                "FORNE" -> alimentacao += valor
-                else -> outros += valor
-            }
-            when (year) {
-                2022 -> ano2022 += valor
-                2021 -> ano2021 += valor
-                2020 -> ano2020 += valor
-                2019 -> ano2019 += valor
-                2018 -> ano2018 += valor
-                2017 -> ano2017 += valor
-                2016 -> ano2016 += valor
-                2015 -> ano2015 += valor
-            }
+        else {
+            listNomeGastoRanking
+                .add(NomeGastoTotal(id, nome, foto, gastoPorDeputado, partido, estado))
         }
+        println(NomeGastoTotal(id, nome, foto, gastoPorDeputado, partido, estado))
+
+        binding.run {
+            textNomeEGasto.text = "$nome: $gastoPorDeputado"
+            textTotalProcesso.text = "Total deputado: "+countDeputado.toString()
+            textTotalGeral.text = "Total geral: "+totalGeralAno.toString()
+            textAno.text = "Ano: "+year.toString()
+        }
+        listGastoPorDeputado = arrayListOf()
+        countDeputado += 1
+        getInfoDeputado()
     }
 
     private fun recDeputado() {
 
         val totalGeralV = """"totalGeral""""
         val notasGeral = """"totalNotas""""
+
         val manutencaoV = """"manutencao""""
         val combustivelV = """"combustivel""""
-        val passagensV = """"passagens""""
         val divulgacaoV = """"divulgacao""""
+        val assinaturaV = """"assinatura""""
+        val passagensV = """"passagens""""
         val telefoniaV = """"telefonia""""
-        val servicosV = """"servicos""""
+        val postaisV = """"postais""""
         val alimentacaoV = """"alimentacao""""
+        val hospedagemV = """"hospedagem"""""
+        val taxiV = """"taxi""""
+        val locacaoV = """"locacao""""
+        val consultoriaV = """"consultoria""""
+        val segurancaV = """"seguranca""""
+        val cursoV = """"curso""""
         val outrosV = """"outros""""
 
-        listNomeGasto.forEach {
-            listNomePrint.add("""{"nome":"${it.nome}", "gasto":"${it.gasto}"}""")
-            println(it.nome + "-" + it.gasto)
-        }
-
-        listTotalGeral = """{"gastoGeral": {$totalGeralV:"$totalGeral", $notasGeral:"$numberNote", 
-             $manutencaoV:"$manutencao", $combustivelV:"$combustivel", $passagensV:"$passagens", 
-             $divulgacaoV:"$divulgacao", $telefoniaV:"$telefonia", $servicosV:"$servicos",
-             $alimentacaoV:"$alimentacao", $outrosV:"$outros", "listDeputado": $listNomePrint]}"""
-
+        // Gera JSON gastos do ano
         try {
-            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/geral")
+            val listTotal = """{"gastoAno${anoSoma}": {$totalGeralV:"$totalGeralAno", $notasGeral:"$numberNoteAno", 
+             $manutencaoV:"$manutencao", $combustivelV:"$combustivel", $passagensV:"$passagens", 
+             $assinaturaV:"$assinatura", $divulgacaoV:"$divulgacao", $telefoniaV:"$telefonia", 
+             $postaisV:"$postais", $hospedagemV:"$hospedagem", $taxiV:"$taxi", $locacaoV:"$locacao",
+             $consultoriaV:"$consultoria", $segurancaV:"$seguranca", $cursoV:"$curso", 
+             $alimentacaoV:"$alimentacao", $outrosV:"$outros"}"""
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/geral${anoSoma}")
             val fos = FileOutputStream(arq)
-            fos.write(listTotalGeral.toByteArray())
+            fos.write(listTotal.toByteArray())
             fos.flush()
             fos.close()
         } catch (e: java.lang.Exception) { }
+
+        // Gera JSON ranking do ano
+        listNomeGasto.forEach {
+            listNomePrint
+                .add("""{"id":"${it.id}", "nome":"${it.nome}", "foto":"${it.foto}", "gasto":"${it.gasto}", "partido":"${it.partido}", "estado":"${it.estado}"}""".trimMargin())
+        }
+
+        try {
+            val ranking = """{"ranking$anoSoma: $listNomePrint"}"""
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/ranking$anoSoma")
+            val fos = FileOutputStream(arq)
+            fos.write(ranking.toByteArray())
+            fos.flush()
+            fos.close()
+        } catch (e: java.lang.Exception) { }
+
+        when(anoSoma){
+            2022 -> {
+                // Gera JSON Gastos de todos os anos
+                val listSomaTotal = """{"gastoGeralSoma": {$totalGeralV:"$totalGeralSoma", $notasGeral:"$numberNoteTotal", 
+                    $manutencaoV:"$manutencaoT", $combustivelV:"$combustivelT", $passagensV:"$passagensT",
+                    $assinaturaV:"$assinaturaT", $divulgacaoV:"$divulgacaoT", $telefoniaV:"$telefoniaT", 
+                    $postaisV:"$postaisT", $hospedagemV:"$hospedagemT", $taxiV:"$taxiT", $locacaoV:"$locacaoT",
+                    $consultoriaV:"$consultoriaT", $segurancaV:"$segurancaT", $cursoV:"$cursoT", 
+                    $alimentacaoV:"$alimentacaoT", $outrosV:"$outrosT"}"""
+
+                try {
+                    val geral = """{"total: $listSomaTotal"}"""
+                    val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/geral")
+                    val fos = FileOutputStream(arq)
+                    fos.write(geral.toByteArray())
+                    fos.flush()
+                    fos.close()
+                } catch (e: java.lang.Exception) { }
+            }
+            else -> {
+                // Zera contatores para o ano seguinte
+                manutencao = 0
+                combustivel = 0
+                assinatura = 0
+                passagens = 0
+                divulgacao = 0
+                telefonia = 0
+                postais = 0
+                alimentacao = 0
+                hospedagem = 0
+                taxi = 0
+                locacao = 0
+                consultoria = 0
+                seguranca = 0
+                curso = 0
+                outros = 0
+
+                // inicia nova busca por gastos no ano seguinte 2015 -> 2016 -> ...
+                anoSoma += 1
+                countDeputado = 0
+                totalGeralAno = 0
+                year += 1
+                listNomeGasto = arrayListOf()
+                listNomePrint = arrayListOf()
+                observer()
+            }
+        }
     }
 }

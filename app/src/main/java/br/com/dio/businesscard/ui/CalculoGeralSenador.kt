@@ -76,7 +76,7 @@ class CalculoGeralSenador {
                 else -> outros += valor
             }
             if (listNomeGasto.isEmpty()) {
-                listNomeGasto.add(NomeGastoTotal(nome, valor))
+                listNomeGasto.add(NomeGastoTotal("", nome, "", valor, "", ""))
             }
             else if (listNomeGasto.isNotEmpty()){
                 var addV = 0
@@ -87,7 +87,7 @@ class CalculoGeralSenador {
                     }
                 }
                 if (addV == 0){
-                    listNomeGasto.add(NomeGastoTotal(nome, valor))
+                    listNomeGasto.add(NomeGastoTotal("", nome, "", valor, "", ""))
                 }
             }
         }
