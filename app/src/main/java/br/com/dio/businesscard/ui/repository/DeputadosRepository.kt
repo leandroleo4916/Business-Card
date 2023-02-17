@@ -1,6 +1,7 @@
 package br.com.dio.businesscard.ui.repository
 
 import androidx.lifecycle.liveData
+import br.com.dio.businesscard.ui.remote.ApiServiceDeputadoMain
 import br.com.dio.businesscard.ui.remote.ApiServiceMain
 import java.net.ConnectException
 
@@ -12,9 +13,9 @@ sealed class ResultRequest<out R> {
 
 class SearchRepository(private val serviceApi: ApiServiceMain) {
 
-    fun searchData(ordenarPor: String) = liveData {
+    fun searchData() = liveData {
         try {
-            val request = serviceApi.getDeputados(ordem = "ASC", ordenarPor)
+            val request = serviceApi.getDeputados()
             if(request.isSuccessful){
                 emit(ResultRequest.Success(dado = request.body()))
             } else {

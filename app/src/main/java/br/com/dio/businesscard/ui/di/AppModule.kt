@@ -1,8 +1,10 @@
 package br.com.dio.businesscard.ui.di
 
 import br.com.dio.businesscard.ui.*
+import br.com.dio.businesscard.ui.remote.ApiServiceDeputadoMain
 import br.com.dio.businesscard.ui.remote.ApiServiceIdDespesas
 import br.com.dio.businesscard.ui.remote.ApiServiceMain
+import br.com.dio.businesscard.ui.remote.ApiServiceSenado
 import br.com.dio.businesscard.ui.repository.IdDespesasRepository
 import br.com.dio.businesscard.ui.repository.SearchRepository
 import okhttp3.OkHttpClient
@@ -32,6 +34,12 @@ val retrofitModule = module {
         }
         single<ApiServiceIdDespesas> {
                 get<Retrofit>().create(ApiServiceIdDespesas::class.java)
+        }
+        single<ApiServiceDeputadoMain> {
+                get<Retrofit>().create(ApiServiceDeputadoMain::class.java)
+        }
+        single<ApiServiceSenado> {
+                get<Retrofit>().create(ApiServiceSenado::class.java)
         }
 }
 
