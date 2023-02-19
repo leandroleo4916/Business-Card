@@ -7,15 +7,9 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import br.com.dio.businesscard.databinding.ActivityMainBinding
 import br.com.dio.businesscard.databinding.ActivitySenadoBinding
 import br.com.dio.businesscard.ui.dataclass.*
-import br.com.dio.businesscard.ui.remote.ApiServiceDeputadoMain
-import br.com.dio.businesscard.ui.remote.ApiServiceIdDespesas
-import br.com.dio.businesscard.ui.remote.ApiServiceSenado
-import br.com.dio.businesscard.ui.remote.Retrofit
-import br.com.dio.businesscard.ui.repository.ResultRequest
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import br.com.dio.businesscard.ui.remote.*
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -26,31 +20,46 @@ import java.util.regex.Pattern
 class SenadoActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivitySenadoBinding.inflate(layoutInflater) }
-    private val viewModel: DespesasViewModel by viewModel()
-    private val getEncodeString = EncodeString()
-    private val calculateTotal = CalculateDados()
     private var sizeTotalProcess = 0
     private var anoSoma = 2011
     private var tentativa = 0
-    private var listGastoGeral: ArrayList<SenadoDataClass> = arrayListOf()
+    private var listGastoGeral: ListSenado = arrayOf()
+    private var listGastoDimension: ArrayList<String> = arrayListOf()
+    private var listRankingAno: ArrayList<String> = arrayListOf()
+    private var listRankingGeral: ArrayList<SenadorRanking> = arrayListOf()
+    private var listFullSenadores: ArrayList<Parlamentar> = arrayListOf()
+    private var countSenadores = 0
+    private var contain = false
 
     private var numberNoteAno = 0
-    private var aluguel = 0.0F
-    private var divulgacao = 0.0F
-    private var passagens = 0.0F
-    private var contratacao = 0.0F
-    private var locomocao = 0.0F
-    private var aquisicao = 0.0F
-    private var outros = 0.0F
+    private var totalAno = 0.0
+    private var aluguel = 0.0
+    private var divulgacao = 0.0
+    private var passagens = 0.0
+    private var contratacao = 0.0
+    private var locomocao = 0.0
+    private var aquisicao = 0.0
+    private var outros = 0.0
+
+    private var numberNoteAnoV = """"notas""""
+    private var totalAnoV = """"total""""
+    private var aluguelV = """"alguel""""
+    private var divulgacaoV = """"divulgacao""""
+    private var passagensV = """"passagens""""
+    private var contratacaoV = """"contratacao""""
+    private var locomocaoV = """"locomocao""""
+    private var aquisicaoV = """"aquisicao""""
+    private var outrosV = """"outros""""
 
     private var numberNoteTotal = 0
-    private var aluguelG = 0.0F
-    private var divulgacaoG = 0.0F
-    private var passagensG = 0.0F
-    private var contratacaoG = 0.0F
-    private var locomocaoG = 0.0F
-    private var aquisicaoG = 0.0F
-    private var outrosG = 0.0F
+    private var totalGeralG = 0.0
+    private var aluguelG = 0.0
+    private var divulgacaoG = 0.0
+    private var passagensG = 0.0
+    private var contratacaoG = 0.0
+    private var locomocaoG = 0.0
+    private var aquisicaoG = 0.0
+    private var outrosG = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +67,6 @@ class SenadoActivity : AppCompatActivity() {
         setUpPermissions()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        observer()
         insertListeners()
     }
 
@@ -77,6 +85,7 @@ class SenadoActivity : AppCompatActivity() {
         binding.run {
             textProcessoSen.setOnClickListener {
                 binding.textProcessoSen.text = "Processando dados..."
+                observer()
             }
         }
     }
@@ -84,18 +93,19 @@ class SenadoActivity : AppCompatActivity() {
     private fun observer() {
 
         val retrofit = Retrofit.createService(ApiServiceSenado::class.java)
-        val call: Call<SenadoDataClass> = retrofit.getDataSenado(anoSoma.toString())
+        val call: Call<ListSenado> = retrofit.getDataSenado(anoSoma.toString())
 
-        call.enqueue(object : Callback<SenadoDataClass> {
-            override fun onResponse(call: Call<SenadoDataClass>, despesas: Response<SenadoDataClass>) {
+        call.enqueue(object : Callback<ListSenado> {
+            override fun onResponse(call: Call<ListSenado>, despesas: Response<ListSenado>) {
                 when (despesas.code()) {
                     200 -> {
                         val despesa = despesas.body()
                         if (despesa != null) {
-                            listGastoGeral = despesa as ArrayList<SenadoDataClass>
+                            listGastoGeral = despesa
                             val size = despesa.size
                             numberNoteAno += size
                             numberNoteTotal += size
+                            processListGasto()
                         }
                     }
                     429 -> observer()
@@ -111,7 +121,7 @@ class SenadoActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(call: Call<SenadoDataClass>, t: Throwable) {
+            override fun onFailure(call: Call<ListSenado>, t: Throwable) {
                 if (tentativa != 3) {
                     tentativa =+ 1
                     observer()
@@ -123,188 +133,174 @@ class SenadoActivity : AppCompatActivity() {
         })
     }
 
+    private fun observerSenadores() {
+
+        val retrofit = Retrofit.createService(ApiServiceSenadores::class.java)
+        val call: Call<SenadoresDataClass> = retrofit.getSenado()
+
+        call.enqueue(object : Callback<SenadoresDataClass> {
+            override fun onResponse(call: Call<SenadoresDataClass>, despesas: Response<SenadoresDataClass>) {
+                when (despesas.code()) {
+                    200 -> {
+                        val despesa = despesas.body()
+                        if (despesa != null) {
+                            val list = despesa.listaParlamentarEmExercicio.parlamentares.parlamentar
+                            listFullSenadores = list as ArrayList<Parlamentar>
+                            countSenadores = list.size
+                        }
+                    }
+                    429 -> observerSenadores()
+                    else -> {
+                        if (tentativa != 3) {
+                            tentativa =+ 1
+                            observerSenadores()
+                        }
+                        println(despesas.message())
+                        binding.textErro.text = "Erro em API - Tentando novamente $tentativa"
+                        Toast.makeText(application, despesas.message(), Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<SenadoresDataClass>, t: Throwable) {
+                if (tentativa != 3) {
+                    tentativa =+ 1
+                    observerSenadores()
+                }
+                println(t.message)
+                binding.textErro.text = "Erro em API - Tentando novamente $tentativa"
+                Toast.makeText(application, t.message, Toast.LENGTH_LONG).show()
+            }
+        })
+    }
+
     private fun processListGasto(){
+
+        var nome = ""
+
         listGastoGeral.forEach {
+            val valor = it.valorReembolsado
 
-        }
-    }
-
-    private fun searchDoc() {
-
-        val list: ArrayList<String> = arrayListOf()
-        try {
-            val arq = File(Environment.getExternalStorageDirectory(), "$anoSoma.txt")
-            val br = BufferedReader(
-                InputStreamReader(FileInputStream(arq), getEncodeString.getEncoding(arq))
-            )
-
-            br.forEachLine {
-                val div = it.split("\";\"")
-                list.add(if (div[0] == "") "Não foi informado" else div[0].split("\"")[1])
-                list.add(if (div[1] == "") "Não foi informado" else div[1])
-                list.add(if (div[2] == "") "Não foi informado" else div[2])
-                list.add(if (div[3] == "") "Não foi informado" else div[3])
-                list.add(if (div[4] == "") "Não foi informado" else div[4])
-                list.add(if (div[5] == "") "Não foi informado" else div[5])
-                list.add(if (div[6] == "") "Não foi informado" else div[6])
-                list.add(if (div[7] == "") "Não foi informado" else div[7])
-                list.add(if (div[8] == "") "Não foi informado" else div[8])
-                list.add(if (div[9] == "") "Não foi informado" else div[9])
-                list.add(if (div[10] == "") "Não foi informado" else div[10].split("\"")[0])
-
-                sizeTotalProcess += 1
-                binding.textTotalProcessoSenador.text = "$sizeTotalProcess processados"
+            if (nome != ""){
+                if (nome != it.nomeSenador){
+                    aluguel = 0.0
+                    locomocao = 0.0
+                    divulgacao = 0.0
+                    contratacao = 0.0
+                    passagens = 0.0
+                    aquisicao = 0.0
+                    outros = 0.0
+                    totalAno += aluguel+locomocao+divulgacao+contratacao+passagens+aquisicao+outros
+                    totalGeralG += totalAno
+                    val name = deleteAccent(it.nomeSenador)
+                    listRankingAno.add(""""nome": $name, "gasto": $totalAno""")
+                    addParlamentarToListRankingGeral(it.nomeSenador, valor)
+                    nome = it.nomeSenador
+                }
+                else {
+                    calcValueNotes(it.tipoDespesa, it.valorReembolsado)
+                }
             }
-            download(list)
+            else {
+                nome = it.nomeSenador
+                calcValueNotes(it.tipoDespesa, it.valorReembolsado)
+            }
+        }
 
-        } catch (e: java.lang.Exception) { }
+        val listAno = """$totalAnoV: "$totalAno", $numberNoteAnoV: "$numberNoteAno", 
+            |$aluguelV: "$aluguel", $divulgacaoV: "$divulgacao", $contratacaoV: "$contratacao", 
+            |$passagensV: "$passagens", $aquisicaoV: "$aquisicao", $outrosV: "$outros"""".trimMargin()
+
+        totalAno = 0.0
+        recAno(listAno)
     }
 
-    private fun download(list: ArrayList<String>) {
+    private fun addParlamentarToListRankingGeral(nome: String, valor: Double){
+        for (parlamentar in listRankingGeral) {
+            if (parlamentar.nome.contains(nome)){
+                parlamentar.gasto += valor
+                contain = true
+                break
+            }
+        }
+        contain = if (!contain) {
+            val name = deleteAccent(nome)
+            listRankingGeral.add(SenadorRanking(name, valor))
+            true
+        } else false
+    }
 
-        var listC: String
-        var listD: ArrayList<String> = arrayListOf()
-        val size = list.size
-        var position = 0
-        var name = ""
-        var namePrint = ""
+    private fun calcValueNotes(note: String, valor: Double) {
 
-        var positionAno = 0
-        var positionMes = 1
-        var positionSen = 2
-        var positionTip = 3
-        var positionCnp = 4
-        var positionFor = 5
-        var positionDoc = 6
-        var positionDat = 7
-        var positionDet = 8
-        var positionVal = 9
-        var positionCod = 10
-
-        var ano = ""
-        var mes = ""
-        var senador = ""
-        var tipoDespesa = ""
-        var cnpjCpf = ""
-        var fornecedor = ""
-        var documento = ""
-        var data = ""
-        var detalhamento = ""
-        var valorReembolsado = ""
-        var codDocumento = ""
-
-        val anoV = """"ano""""
-        val mesV = """"mes""""
-        val senadorV = """"senador""""
-        val tipoDespesaV = """"tipoDespesa""""
-        val cnpjCpfV = """"cnpjCpf""""
-        val fornecedorV = """"fornecedor""""
-        val documentoV = """"documento""""
-        val dataV = """"data""""
-        val detalhamentoV = """"detalhamento""""
-        val valorReembolsadoV = """"valorReembolsado""""
-        val codDocumentoV = """"codDocumento""""
-
-        list.forEach { i ->
-            when (position) {
-                positionAno -> {
-                    ano = "\"$i\""
-                    positionAno += 11
-                    position += 1
-                }
-                positionMes -> {
-                    mes = "\"$i\""
-                    positionMes += 11
-                    position += 1
-                }
-                positionSen -> {
-                    senador = "\"$i\""
-                    positionSen += 11
-                    position += 1
-                    if (name == "") {
-                        name = i
-                        namePrint = i
-                    } else {
-                        if (i == namePrint) {
-                            name = i
-                            namePrint = i
-                        } else {
-                            //rec(listD.toString(), name)
-                            listD = arrayListOf()
-                            name = i
-                            namePrint = i
-                        }
-                    }
-                }
-                positionTip -> {
-                    tipoDespesa = "\"$i\""
-                    positionTip += 11
-                    position += 1
-                }
-                positionCnp -> {
-                    cnpjCpf = "\"$i\""
-                    positionCnp += 11
-                    position += 1
-                }
-                positionFor -> {
-                    fornecedor = "\"$i\""
-                    positionFor += 11
-                    position += 1
-                }
-                positionDoc -> {
-                    documento = "\"$i\""
-                    positionDoc += 11
-                    position += 1
-                }
-                positionDat -> {
-                    data = "\"$i\""
-                    positionDat += 11
-                    position += 1
-                }
-                positionDet -> {
-                    detalhamento = "\"$i\""
-                    positionDet += 11
-                    position += 1
-                }
-                positionVal -> {
-                    valorReembolsado = "\"$i\""
-                    positionVal += 11
-                    position += 1
-                }
-                positionCod -> {
-                    codDocumento = "\"$i\""
-                    positionCod += 11
-                    position += 1
-
-                    listC =
-                        """{$anoV:$ano, $mesV:$mes, $senadorV:$senador, $tipoDespesaV:$tipoDespesa, 
-                    $cnpjCpfV:$cnpjCpf, $fornecedorV:$fornecedor, $documentoV:$documento, 
-                    $dataV:$data, $detalhamentoV:$detalhamento, $valorReembolsadoV:$valorReembolsado, 
-                    $codDocumentoV:$codDocumento}"""
-
-                    listD.add(listC)
-                    if (position == size) {
-                        rec(listD.toString(), name)
-                        anoSoma += 1
-                        if (anoSoma != 2023) {
-                            searchDoc()
-                        }
-                    }
-                }
+        when (note) {
+            "Aluguel de imóveis para escritório político, compreendendo despesas concernentes a eles." -> {
+                aluguel += valor
+                aluguelG += valor
+            }
+            "Locomoção, hospedagem, alimentação, combustíveis e lubrificantes" -> {
+                locomocao += valor
+                locomocaoG += valor
+            }
+            "Divulgação da atividade parlamentar" -> {
+                divulgacao += valor
+                divulgacaoG += valor
+            }
+            "Contratação de consultorias, assessorias, pesquisas, trabalhos técnicos e outros serviços de apoio ao exercício do mandato parlamentar" -> {
+                contratacao += valor
+                contratacaoG += valor
+            }
+            "Passagens aéreas, aquáticas e terrestres nacionais" -> {
+                passagens += valor
+                passagensG += valor
+            }
+            "Aquisição de material de consumo para uso no escritório político, inclusive aquisição ou locação de software, despesas postais, aquisição de publicações, locação de móveis e de equipamentos. " -> {
+                aquisicao += valor
+                aquisicaoG += valor
+            }
+            else -> {
+                outros += valor
+                outrosG += valor
             }
         }
     }
 
-    private fun rec(text: String, nome: String) {
-
+    private fun recAno(listAno: String) {
         try {
-            val codi = deleteAccent(nome)
-            val arq = File(Environment.getExternalStorageDirectory(), "/$anoSoma/$codi")
+            val total = """{"total": $listAno}"""
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenado/geral")
             val fos = FileOutputStream(arq)
-            fos.write("{\"gastosSenador\": $text}".toByteArray())
+            fos.write(total.toByteArray())
             fos.flush()
             fos.close()
-        } catch (e: java.lang.Exception) {
+        } catch (e: java.lang.Exception) { }
+
+        try {
+            val total = """{"ranking": $listRankingAno}"""
+            val arq = File(Environment.getExternalStorageDirectory(), "/rankingSanado/geral")
+            val fos = FileOutputStream(arq)
+            fos.write(total.toByteArray())
+            fos.flush()
+            fos.close()
+        } catch (e: java.lang.Exception) { }
+
+        if (anoSoma == 2023){
+            try {
+                val total = """{"total": $listAno}"""
+                val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeralSenado/geral")
+                val fos = FileOutputStream(arq)
+                fos.write(total.toByteArray())
+                fos.flush()
+                fos.close()
+            } catch (e: java.lang.Exception) { }
+
+            try {
+                val total = """{"ranking": $listAno}"""
+                val arq = File(Environment.getExternalStorageDirectory(), "/rankingGeralSenado/geral")
+                val fos = FileOutputStream(arq)
+                fos.write(total.toByteArray())
+                fos.flush()
+                fos.close()
+            } catch (e: java.lang.Exception) { }
         }
     }
 

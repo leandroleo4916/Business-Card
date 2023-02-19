@@ -1,9 +1,6 @@
 package br.com.dio.businesscard.ui.remote
 
-import br.com.dio.businesscard.ui.dataclass.DeputadoClass
-import br.com.dio.businesscard.ui.dataclass.Despesas
-import br.com.dio.businesscard.ui.dataclass.MainDataClass
-import br.com.dio.businesscard.ui.dataclass.SenadoDataClass
+import br.com.dio.businesscard.ui.dataclass.*
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.*
@@ -19,7 +16,12 @@ interface ApiServiceSenado {
     @GET("https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/{ano}")
     fun getDataSenado(
         @Path("ano") ano: String
-    ): Call<SenadoDataClass>
+    ): Call<ListSenado>
+}
+
+interface ApiServiceSenadores {
+    @GET("https://legis.senado.leg.br/dadosabertos/senador/lista/atual.json")
+    fun getSenado(): Call<SenadoresDataClass>
 }
 
 interface ApiServiceMain {

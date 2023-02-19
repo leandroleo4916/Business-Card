@@ -1,5 +1,7 @@
 package br.com.dio.businesscard.ui.dataclass
 
+typealias ListSenado = Array<SenadoDataClass>
+
 data class SenadoDataClass(
     val id: Long,
     val tipoDocumento: Long,
@@ -14,4 +16,3 @@ data class SenadoDataClass(
     val detalhamento: String?,
     val valorReembolsado: Double
 )
-

@@ -18,9 +18,8 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.*
-import java.text.Normalizer
-import java.util.regex.Pattern
+import java.io.File
+import java.io.FileOutputStream
 
 class MainActivity : AppCompatActivity() {
 
@@ -76,7 +75,7 @@ class MainActivity : AppCompatActivity() {
     var outrosT = 0
 
     var totalGeralAno = 0
-    var totalGeralSoma = 0
+    var totalGeralSoma = 0.0
     var listNomePrint: ArrayList<String> = arrayListOf()
     var listNomePrintGeral: ArrayList<String> = arrayListOf()
     var countDeputado = 0
@@ -428,7 +427,7 @@ class MainActivity : AppCompatActivity() {
                     $assinaturaV:"$assinaturaT", $divulgacaoV:"$divulgacaoT", $telefoniaV:"$telefoniaT", 
                     $postaisV:"$postaisT", $hospedagemV:"$hospedagemT", $taxiV:"$taxiT", $locacaoV:"$locacaoT",
                     $consultoriaV:"$consultoriaT", $segurancaV:"$segurancaT", $cursoV:"$cursoT", 
-                    $alimentacaoV:"$alimentacaoT", $outrosV:"$outrosT}"""
+                    $alimentacaoV:"$alimentacaoT", $outrosV:"$outrosT"}"""
 
                 try {
                     val geral = """{"total": $listSomaTotal}"""
