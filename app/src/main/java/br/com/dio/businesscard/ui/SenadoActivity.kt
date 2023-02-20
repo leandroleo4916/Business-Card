@@ -25,11 +25,11 @@ class SenadoActivity : AppCompatActivity() {
     private var tentativa = 0
     private var listGastoGeral: ListSenado = arrayOf()
     private var listGastoDimension: ArrayList<String> = arrayListOf()
-    private var listRankingAno: ArrayList<String> = arrayListOf()
     private var listRankingGeral: ArrayList<SenadorRanking> = arrayListOf()
-    private var listFullSenadores: ArrayList<Parlamentar> = arrayListOf()
-    private var countSenadores = 0
+    private var rankingAno: ArrayList<SenadorRanking> = arrayListOf()
     private var contain = false
+    private var containAno = false
+    private var nome = ""
 
     private var numberNoteAno = 0
     private var totalAno = 0.0
@@ -133,56 +133,20 @@ class SenadoActivity : AppCompatActivity() {
         })
     }
 
-    private fun observerSenadores() {
-
-        val retrofit = Retrofit.createService(ApiServiceSenadores::class.java)
-        val call: Call<SenadoresDataClass> = retrofit.getSenado()
-
-        call.enqueue(object : Callback<SenadoresDataClass> {
-            override fun onResponse(call: Call<SenadoresDataClass>, despesas: Response<SenadoresDataClass>) {
-                when (despesas.code()) {
-                    200 -> {
-                        val despesa = despesas.body()
-                        if (despesa != null) {
-                            val list = despesa.listaParlamentarEmExercicio.parlamentares.parlamentar
-                            listFullSenadores = list as ArrayList<Parlamentar>
-                            countSenadores = list.size
-                        }
-                    }
-                    429 -> observerSenadores()
-                    else -> {
-                        if (tentativa != 3) {
-                            tentativa =+ 1
-                            observerSenadores()
-                        }
-                        println(despesas.message())
-                        binding.textErro.text = "Erro em API - Tentando novamente $tentativa"
-                        Toast.makeText(application, despesas.message(), Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-
-            override fun onFailure(call: Call<SenadoresDataClass>, t: Throwable) {
-                if (tentativa != 3) {
-                    tentativa =+ 1
-                    observerSenadores()
-                }
-                println(t.message)
-                binding.textErro.text = "Erro em API - Tentando novamente $tentativa"
-                Toast.makeText(application, t.message, Toast.LENGTH_LONG).show()
-            }
-        })
-    }
-
     private fun processListGasto(){
 
-        var nome = ""
-
         listGastoGeral.forEach {
-            val valor = it.valorReembolsado
+            addRankingAno(it.nomeSenador, it.valorReembolsado)
 
             if (nome != ""){
-                if (nome != it.nomeSenador){
+                if (nome == it.nomeSenador){
+                    calcValueNotes(it.tipoDespesa, it.valorReembolsado)
+                }
+                else {
+                    totalAno += aluguel+locomocao+divulgacao+contratacao+passagens+aquisicao+outros
+                    totalGeralG += totalAno
+                    addRankingGeral(nome, totalAno)
+                    nome = it.nomeSenador
                     aluguel = 0.0
                     locomocao = 0.0
                     divulgacao = 0.0
@@ -190,15 +154,6 @@ class SenadoActivity : AppCompatActivity() {
                     passagens = 0.0
                     aquisicao = 0.0
                     outros = 0.0
-                    totalAno += aluguel+locomocao+divulgacao+contratacao+passagens+aquisicao+outros
-                    totalGeralG += totalAno
-                    val name = deleteAccent(it.nomeSenador)
-                    listRankingAno.add(""""nome": $name, "gasto": $totalAno""")
-                    addParlamentarToListRankingGeral(it.nomeSenador, valor)
-                    nome = it.nomeSenador
-                }
-                else {
-                    calcValueNotes(it.tipoDespesa, it.valorReembolsado)
                 }
             }
             else {
@@ -207,26 +162,36 @@ class SenadoActivity : AppCompatActivity() {
             }
         }
 
-        val listAno = """$totalAnoV: "$totalAno", $numberNoteAnoV: "$numberNoteAno", 
-            |$aluguelV: "$aluguel", $divulgacaoV: "$divulgacao", $contratacaoV: "$contratacao", 
-            |$passagensV: "$passagens", $aquisicaoV: "$aquisicao", $outrosV: "$outros"""".trimMargin()
-
         totalAno = 0.0
-        recAno(listAno)
+        nome = ""
+        recAno()
     }
 
-    private fun addParlamentarToListRankingGeral(nome: String, valor: Double){
-        for (parlamentar in listRankingGeral) {
-            if (parlamentar.nome.contains(nome)){
-                parlamentar.gasto += valor
+    private fun addRankingGeral(nome: String, valor: Double){
+        for (i in listRankingGeral) {
+            if (i.nome.contains(nome)){
+                i.gasto += valor
                 contain = true
                 break
             }
         }
         contain = if (!contain) {
-            val name = deleteAccent(nome)
-            listRankingGeral.add(SenadorRanking(name, valor))
-            true
+            listRankingGeral.add(SenadorRanking(nome, valor))
+            false
+        } else false
+    }
+
+    private fun addRankingAno(nome: String, valor: Double){
+        for (i in rankingAno){
+            if (i.nome == nome){
+                i.gasto += valor
+                containAno = true
+                break
+            }
+        }
+        containAno = if (!containAno){
+            rankingAno.add(SenadorRanking(nome, valor))
+            false
         } else false
     }
 
@@ -264,8 +229,13 @@ class SenadoActivity : AppCompatActivity() {
         }
     }
 
-    private fun recAno(listAno: String) {
+    private fun recAno() {
         try {
+            val listAno = """$totalAnoV: "$totalAno", $numberNoteAnoV: "$numberNoteAno", 
+            |$aluguelV: "$aluguel", $divulgacaoV: "$divulgacao", $contratacaoV: "$contratacao", 
+            |$locomocaoV: "$locomocao", $passagensV: "$passagens", $aquisicaoV: "$aquisicao", 
+            |$outrosV: "$outros"""".trimMargin()
+
             val total = """{"total": $listAno}"""
             val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenado/geral")
             val fos = FileOutputStream(arq)
@@ -275,8 +245,13 @@ class SenadoActivity : AppCompatActivity() {
         } catch (e: java.lang.Exception) { }
 
         try {
+            val listRankingAno: ArrayList<String> = arrayListOf()
+            rankingAno.forEach {
+                val gasto = it.gasto.toInt()
+                listRankingAno.add(""""nome":"${it.nome}", "gasto":"$gasto"""")
+            }
             val total = """{"ranking": $listRankingAno}"""
-            val arq = File(Environment.getExternalStorageDirectory(), "/rankingSanado/geral")
+            val arq = File(Environment.getExternalStorageDirectory(), "/rankingSenado/geral")
             val fos = FileOutputStream(arq)
             fos.write(total.toByteArray())
             fos.flush()
@@ -285,6 +260,11 @@ class SenadoActivity : AppCompatActivity() {
 
         if (anoSoma == 2023){
             try {
+                val listAno = """$totalAnoV: "$totalGeralG", $numberNoteAnoV: "$numberNoteTotal", 
+                |$aluguelV: "$aluguelG", $divulgacaoV: "$divulgacaoG", $contratacaoV: "$contratacaoG", 
+                |$locomocaoV: "$locomocaoG", $passagensV: "$passagensG", $aquisicaoV: "$aquisicaoG", 
+                |$outrosV: "$outrosG"""".trimMargin()
+
                 val total = """{"total": $listAno}"""
                 val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeralSenado/geral")
                 val fos = FileOutputStream(arq)
@@ -294,7 +274,12 @@ class SenadoActivity : AppCompatActivity() {
             } catch (e: java.lang.Exception) { }
 
             try {
-                val total = """{"ranking": $listAno}"""
+                val listRankingAll: ArrayList<String> = arrayListOf()
+                listRankingGeral.forEach {
+                    val gasto = it.gasto.toInt()
+                    listRankingAll.add(""""nome":"${it.nome}", "gasto":"$gasto"""")
+                }
+                val total = """{"ranking": $listRankingAll}"""
                 val arq = File(Environment.getExternalStorageDirectory(), "/rankingGeralSenado/geral")
                 val fos = FileOutputStream(arq)
                 fos.write(total.toByteArray())
@@ -302,6 +287,8 @@ class SenadoActivity : AppCompatActivity() {
                 fos.close()
             } catch (e: java.lang.Exception) { }
         }
+        anoSoma += 1
+        observer()
     }
 
     private fun deleteAccent(str: String): String {
