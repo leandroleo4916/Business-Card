@@ -20,8 +20,11 @@ interface ApiServiceSenado {
 }
 
 interface ApiServiceSenadores {
-    @GET("https://legis.senado.leg.br/dadosabertos/senador/lista/atual.json")
-    fun getSenado(): Call<SenadoresDataClass>
+    @GET("https://raw.githubusercontent.com/leandroleo4916/API_SENADO/master/{ano}/{nome}")
+    fun getSenador(
+        @Path("ano") ano: String,
+        @Path("nome") nome: String
+    ): Call<GastosDataClass>
 }
 
 interface ApiServiceMain {
