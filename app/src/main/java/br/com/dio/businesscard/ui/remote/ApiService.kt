@@ -19,12 +19,11 @@ interface ApiServiceSenado {
     ): Call<ListSenado>
 }
 
-interface ApiServiceSenadores {
-    @GET("https://raw.githubusercontent.com/leandroleo4916/API_SENADO/master/{ano}/{nome}")
-    fun getSenador(
-        @Path("ano") ano: String,
-        @Path("nome") nome: String
-    ): Call<GastosDataClass>
+interface ApiServiceLegislatura {
+    @GET("https://raw.githubusercontent.com/leandroleo4916/API_SENADO/master/apiLeg{leg}")
+    fun getLegislatura(
+        @Path("leg") leg: String
+    ): Call<SenadorLegislatura>
 }
 
 interface ApiServiceMain {

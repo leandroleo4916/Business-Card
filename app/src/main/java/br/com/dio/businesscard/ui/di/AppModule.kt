@@ -38,8 +38,8 @@ val retrofitModule = module {
         single<ApiServiceSenado> {
                 get<Retrofit>().create(ApiServiceSenado::class.java)
         }
-        single<ApiServiceSenadores> {
-                get<Retrofit>().create(ApiServiceSenadores::class.java)
+        single<ApiServiceLegislatura> {
+                get<Retrofit>().create(ApiServiceLegislatura::class.java)
         }
 }
 
