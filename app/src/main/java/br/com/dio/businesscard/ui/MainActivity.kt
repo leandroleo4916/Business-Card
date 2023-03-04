@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModelCamara: CamaraViewModel by viewModel()
     private var listDeputado: ArrayList<ListDeputados> = arrayListOf()
     private var listGastoPorDeputado: ArrayList<DadoDespesas> = arrayListOf()
-    private var listNomeGastoRanking: ArrayList<NomeGastoTotal> = arrayListOf()
+    private var listNomeGastoAnoRanking: ArrayList<NomeGastoTotal> = arrayListOf()
     private var listNomeGastoRankingGeral: ArrayList<NomeGastoTotal> = arrayListOf()
     private var idNome = ""
     private var nome = ""
@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
     var outrosT = 0
 
     var totalGeralAno = 0
-    var totalGeralSoma = 0.0
+    var totalGeralSoma: Long = 0
     var listNomePrint: ArrayList<String> = arrayListOf()
     var listNomePrintGeral: ArrayList<String> = arrayListOf()
     var countDeputado = 0
@@ -124,6 +124,7 @@ class MainActivity : AppCompatActivity() {
                     is ResultRequest.Success -> {
                         result.dado?.let { deputados ->
                             listDeputado = deputados.dados as ArrayList
+                            println("Baixou lista de deputados")
                             getInfoDeputado()
                         }
                     }
@@ -147,11 +148,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun getInfoDeputado() {
-        if (countDeputado != 2247){
-            val idDep = listDeputado[countDeputado].uri.split("deputados/")
-            observerDeputado(idDep[1])
-        }
-        else recDeputado()
+        if (countDeputado < 2300){
+            listDeputado[countDeputado].run {
+                if (idLegislaturaInicial >= 54 || idLegislaturaFinal >= 54){
+                    println("Processando dados ${nome} - $anoSoma")
+                    val idDep = uri.split("deputados/")
+                    observerDeputado(idDep[1])
+                    binding.textTotalProcesso.text = "Total deputado: " + countDeputado.toString()
+                    countDeputado += 1
+                }
+                else {
+                    binding.textTotalProcesso.text = "Total deputado: " + countDeputado.toString()
+                    countDeputado += 1
+                    getInfoDeputado()
+                }
+            }
+        }else recDeputado()
     }
 
     // Pega info de cada deputado e faz busca dos gastos -> observer()
@@ -176,12 +188,9 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                     429 -> observerDeputado(idDep)
-                    else -> {
-                        observerDeputado(idDep)
-                    }
+                    else -> observerDeputado(idDep)
                 }
             }
-
             override fun onFailure(call: Call<DeputadoClass>, t: Throwable) {
                 observerDeputado(idDep)
             }
@@ -215,13 +224,11 @@ class MainActivity : AppCompatActivity() {
                                 }
                                 else {
                                     page = 1
-                                    countDeputado += 1
-                                    binding.textTotalProcesso.text =
-                                        "Total deputado: " + countDeputado.toString()
                                     getInfoDeputado()
                                 }
                             }
                         }
+                        else getInfoDeputado()
                     }
                     429 -> observer()
                     else -> {
@@ -253,7 +260,7 @@ class MainActivity : AppCompatActivity() {
     private fun getValuePerNoteType() {
 
         var gastoPorDeputado = 0
-        listGastoPorDeputado.forEach {
+        for (it in listGastoPorDeputado) {
 
             if (it.valorDocumento.toString() != "" && it.valorDocumento > 0) {
                 val valor = it.valorDocumento.toInt()
@@ -337,11 +344,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        listNomeGastoRanking.add(NomeGastoTotal(idV, nome, foto, gastoPorDeputado, partido, estado))
+        listNomeGastoAnoRanking.add(NomeGastoTotal(idV, nome, foto, gastoPorDeputado, partido, estado))
+        listNomePrint.add("""{"id":"$idV", "nome":"$nome", "foto":"$foto", "gasto":"$gastoPorDeputado", "partido":"$partido", "estado":"$estado"}""".trimMargin())
+        println("""{"id":"$idV", "nome":"$nome", "foto":"$foto", "gasto":"$gastoPorDeputado", "partido":"$partido", "estado":"$estado"}""".trimMargin())
 
         var confirm = false
         for (it in listNomeGastoRankingGeral) {
-            if (it.id.contains(idV)) {
+            if (it.id == idV) {
                 it.gasto += gastoPorDeputado
                 confirm = true
                 break
@@ -350,8 +359,9 @@ class MainActivity : AppCompatActivity() {
         if (!confirm) {
             listNomeGastoRankingGeral.add(NomeGastoTotal(idV, nome, foto, gastoPorDeputado, partido, estado))
         }
-
         println(NomeGastoTotal(idV, nome, foto, gastoPorDeputado, partido, estado))
+        println("Fim do processo de $nome")
+        println("-------------------------------------------------------------------------------")
 
         binding.run {
             textNomeEGasto.text = "$nome: $gastoPorDeputado"
@@ -360,7 +370,6 @@ class MainActivity : AppCompatActivity() {
             textAno.text = "Ano: " + year.toString()
         }
         listGastoPorDeputado = arrayListOf()
-        countDeputado += 1
         getInfoDeputado()
     }
 
@@ -388,41 +397,37 @@ class MainActivity : AppCompatActivity() {
         // Gera JSON gastos do ano
         try {
             val listTotal =
-                """{"gastoAno${anoSoma}": {$totalGeralV:"$totalGeralAno", $notasGeral:"$numberNoteAno", 
+                """{"gastoGeral": {$totalGeralV:"$totalGeralAno", $notasGeral:"$numberNoteAno", 
              $manutencaoV:"$manutencao", $combustivelV:"$combustivel", $passagensV:"$passagens", 
              $assinaturaV:"$assinatura", $divulgacaoV:"$divulgacao", $telefoniaV:"$telefonia", 
              $postaisV:"$postais", $hospedagemV:"$hospedagem", $taxiV:"$taxi", $locacaoV:"$locacao",
              $consultoriaV:"$consultoria", $segurancaV:"$seguranca", $cursoV:"$curso", 
              $alimentacaoV:"$alimentacao", $outrosV:"$outros"}}"""
-            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/geral${anoSoma}")
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/$anoSoma")
             val fos = FileOutputStream(arq)
             fos.write(listTotal.toByteArray())
             fos.flush()
             fos.close()
-        } catch (e: java.lang.Exception) {
-        }
+            println("Gravou gasto do ano $anoSoma")
+        } catch (e: java.lang.Exception) { }
 
         // Gera JSON ranking do ano
-        listNomeGastoRanking.forEach {
-            listNomePrint
-                .add("""{"id":"${it.id}", "nome":"${it.nome}", "foto":"${it.foto}", "gasto":"${it.gasto}", "partido":"${it.partido}", "estado":"${it.estado}"}""".trimMargin())
-        }
-
         try {
-            val ranking = """{"ranking$anoSoma": $listNomePrint}"""
+            val ranking = """{"ranking": $listNomePrint}"""
             val arq = File(Environment.getExternalStorageDirectory(), "/gastoGeral/ranking$anoSoma")
             val fos = FileOutputStream(arq)
             fos.write(ranking.toByteArray())
             fos.flush()
             fos.close()
+            println("Gravou ranking do ano $anoSoma")
         } catch (e: java.lang.Exception) {
         }
 
         when (anoSoma) {
-            2022 -> {
+            2023 -> {
                 // Gera JSON Gastos de todos os anos
                 val listSomaTotal =
-                    """{"gastoGeralSoma": {$totalGeralV:"$totalGeralSoma", $notasGeral:"$numberNoteTotal", 
+                    """{"gastoGeral": {$totalGeralV:"$totalGeralSoma", $notasGeral:"$numberNoteTotal", 
                     $manutencaoV:"$manutencaoT", $combustivelV:"$combustivelT", $passagensV:"$passagensT",
                     $assinaturaV:"$assinaturaT", $divulgacaoV:"$divulgacaoT", $telefoniaV:"$telefoniaT", 
                     $postaisV:"$postaisT", $hospedagemV:"$hospedagemT", $taxiV:"$taxiT", $locacaoV:"$locacaoT",
@@ -436,6 +441,7 @@ class MainActivity : AppCompatActivity() {
                     fos.write(geral.toByteArray())
                     fos.flush()
                     fos.close()
+                    println("Gravou gasto geral")
                 } catch (e: java.lang.Exception) {
                 }
 
@@ -452,6 +458,7 @@ class MainActivity : AppCompatActivity() {
                     fos.write(ranking.toByteArray())
                     fos.flush()
                     fos.close()
+                    println("Gravou ranking geral")
                 } catch (e: java.lang.Exception) {
                 }
             }
@@ -478,9 +485,10 @@ class MainActivity : AppCompatActivity() {
                 countDeputado = 0
                 totalGeralAno = 0
                 year += 1
-                listNomeGastoRanking = arrayListOf()
+                listNomeGastoAnoRanking = arrayListOf()
                 listNomePrint = arrayListOf()
-                observer()
+                println("Zerou contadores - Iniciando Ano $anoSoma")
+                getInfoDeputado()
             }
         }
     }
