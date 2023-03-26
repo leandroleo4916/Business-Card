@@ -223,8 +223,14 @@ class MainActivity : AppCompatActivity() {
                                     getValuePerNoteType()
                                 }
                                 else {
-                                    page = 1
-                                    getInfoDeputado()
+                                    if (page != 1){
+                                        page = 1
+                                        getValuePerNoteType()
+                                    }
+                                    else {
+                                        page = 1
+                                        getInfoDeputado()
+                                    }
                                 }
                             }
                         }

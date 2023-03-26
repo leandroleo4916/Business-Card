@@ -20,7 +20,7 @@ import java.io.FileOutputStream
 import java.text.Normalizer
 import java.util.regex.Pattern
 
-class SenadoActivity : AppCompatActivity() {
+class SenadoActivity2 : AppCompatActivity() {
 
     private val binding by lazy { ActivitySenadoBinding.inflate(layoutInflater) }
     private var sizeTotalProcess = 0
