@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.utils
 
 import org.mozilla.universalchardet.UniversalDetector
 import java.io.File

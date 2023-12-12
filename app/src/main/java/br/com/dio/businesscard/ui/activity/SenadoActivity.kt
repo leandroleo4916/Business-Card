@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.activity
 
 import android.Manifest
 import android.os.Bundle
@@ -12,23 +12,26 @@ import br.com.dio.businesscard.ui.dataclass.*
 import br.com.dio.businesscard.ui.remote.ApiServiceLegislatura
 import br.com.dio.businesscard.ui.remote.ApiServiceSenado
 import br.com.dio.businesscard.ui.remote.Retrofit
+import br.com.dio.businesscard.ui.utils.DeleteAccent
+import org.koin.android.ext.android.inject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
-import java.text.Normalizer
-import java.util.regex.Pattern
 
-class SenadoActivity2 : AppCompatActivity() {
+class SenadoActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivitySenadoBinding.inflate(layoutInflater) }
+    private val deleteAccent: DeleteAccent by inject()
     private var sizeTotalProcess = 0
     private var countRanking = 0
     private var anoSoma = 2011
     private var tentativa = 0
     private var listGastoGeral: ListSenado = arrayOf()
-    private var listDeputados: ArrayList<Parlamentar> = arrayListOf()
+    private var listSenadores: ArrayList<Parlamentar> = arrayListOf()
+    private var listSenadoresAdded: ArrayList<Parlamentar> = arrayListOf()
+    private var anoLegislatura = 54
     private var listNoteApi: ArrayList<String> = arrayListOf()
 
     private var listRankingGeral: ArrayList<SenadorRanking> = arrayListOf()
@@ -102,22 +105,6 @@ class SenadoActivity2 : AppCompatActivity() {
 
     private fun observer() {
 
-        val anoLegislatura =
-            when(anoSoma){
-                2011 -> 54
-                2012 -> 54
-                2013 -> 54
-                2014 -> 54
-                2015 -> 55
-                2016 -> 55
-                2017 -> 55
-                2018 -> 55
-                2019 -> 56
-                2020 -> 56
-                2021 -> 56
-                2022 -> 56
-                else -> 57
-            }
         val retrofit = Retrofit.createService(ApiServiceLegislatura::class.java)
         val call: Call<SenadorLegislatura> = retrofit.getLegislatura(anoLegislatura.toString())
 
@@ -127,10 +114,10 @@ class SenadoActivity2 : AppCompatActivity() {
                     200 -> {
                         println("Baixou lista de senadores")
                         if (despesas.body() != null) {
-                            listDeputados = despesas.body()!!.listaParlamentarLegislatura
+                            listSenadores = despesas.body()!!.listaParlamentarLegislatura
                                 .parlamentares.parlamentar as ArrayList<Parlamentar>
                         }
-                        observerGasto()
+                        uneListaSenadores()
                     }
                     429 -> observer()
                     else -> {
@@ -157,6 +144,18 @@ class SenadoActivity2 : AppCompatActivity() {
         })
     }
 
+    // Função une lista de senadores de uma legislatura anterior e atual
+    private fun uneListaSenadores(){
+
+        listSenadoresAdded =
+            if (listSenadoresAdded.isEmpty()) listSenadores
+            else (listSenadores + listSenadoresAdded).distinct() as ArrayList<Parlamentar>
+
+        anoLegislatura++
+        if (anoLegislatura <= 57) observer()
+        else observerGasto()
+    }
+
     private fun observerGasto() {
 
         val retrofit = Retrofit.createService(ApiServiceSenado::class.java)
@@ -172,7 +171,7 @@ class SenadoActivity2 : AppCompatActivity() {
                             listGastoGeral = despesas.body()!!
                             numberNoteAno += despesas.body()!!.size
                             numberNoteTotal += despesas.body()!!.size
-                            orderList()
+                            addAllNotesPerSenador()
                         }
                     }
                     429 -> observer()
@@ -200,18 +199,58 @@ class SenadoActivity2 : AppCompatActivity() {
         })
     }
 
+    private fun addAllNotesPerSenador(){
+
+        val listRemove: MutableList<SenadoDataClass> = arrayListOf()
+        var listIndex: MutableList<SenadoDataClass> = arrayListOf()
+
+        listGastoGeral.forEach {
+            listRemove.add(it)
+        }
+
+        for (senador in listSenadoresAdded){
+            val nome = senador.identificacaoParlamentar.nomeParlamentar.lowercase()
+            for (note in listRemove){
+                if (nome == note.nomeSenador.lowercase()){
+                    addNoteParlamentarToListAno(note)
+                    listIndex.add(note)
+                }
+            }
+
+            listRemove.removeAll(listIndex)
+
+            listIndex = arrayListOf()
+            if (listNoteApi.isNotEmpty()) {
+                val nomeFormat = deleteAccent.deleteAccent(nome)
+                recNoteParlamentar(nomeFormat)
+            }
+        }
+    }
+
+    private fun addParlamentarToListRankingAno2(parlamentar: Parlamentar) {
+        parlamentar.identificacaoParlamentar.run {
+            listRankingAno.add(
+                """{"id":"${this.codigoParlamentar}", "nome":"${this.nomeParlamentar}", 
+                    |"foto":"${this.urlFotoParlamentar ?: ""}", "gasto":"$totalParlamentarAno", 
+                    |"partido":"${this.siglaPartidoParlamentar}", "estado":"${this.ufParlamentar}"}""".trimMargin()
+            )
+            binding.textRanking.text = "$countRanking adicionado no ranking"
+            countRanking += 1
+        }
+    }
+
     private fun orderList(){
         println("Iniciou ordenação da lista")
-        listDeputados.forEach {
+        listSenadores.forEach {
 
             println("Pegando notas de ${it.identificacaoParlamentar.nomeParlamentar}")
-            val n1 = deleteAccent(it.identificacaoParlamentar.nomeParlamentar)
+            val n1 = deleteAccent.deleteAccent(it.identificacaoParlamentar.nomeParlamentar)
             binding.textTotalProcessoSenador.text = "$sizeTotalProcess Deputados"
             binding.textNomeEGastoSenador.text = "Contando notas de $n1"
             sizeTotalProcess += 1
 
             for (item in listGastoGeral){
-                val n2 = deleteAccent(item.nomeSenador)
+                val n2 = deleteAccent.deleteAccent(item.nomeSenador)
                 if (n1 == n2){
                     // Gasto por ano
                     addNoteParlamentarToListAno(item)
@@ -295,11 +334,11 @@ class SenadoActivity2 : AppCompatActivity() {
         parlamentar.identificacaoParlamentar.run {
 
             if (listGastoGeral.isNotEmpty()) {
-                val n1 = deleteAccent(this.nomeParlamentar)
+                val n1 = deleteAccent.deleteAccent(this.nomeParlamentar)
                 var contain = false
 
                 listRankingGeral.forEach {
-                    val n2 = deleteAccent(it.nome)
+                    val n2 = deleteAccent.deleteAccent(it.nome)
                     if (n1 == n2) {
                         it.gasto += totalParlamentarAno
                         contain = true
@@ -345,17 +384,6 @@ class SenadoActivity2 : AppCompatActivity() {
         locomocaoA = 0
         aquisicaoA = 0
         outrosA = 0
-    }
-
-    private fun deleteAccent(str: String): String {
-        var ret = ""
-        val lower = str.lowercase()
-        val nfdNormalizedString: String = Normalizer.normalize(lower, Normalizer.Form.NFD)
-        val pattern: Pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
-        val text = pattern.matcher(nfdNormalizedString).replaceAll("")
-        val nome = text.split(" ")
-        nome.forEach { ret += it }
-        return ret
     }
 
     // Grava notas de cada Parlamentar

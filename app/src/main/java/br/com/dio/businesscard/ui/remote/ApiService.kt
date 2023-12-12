@@ -19,11 +19,6 @@ interface ApiServiceSenado {
     ): Call<ListSenado>
 }
 
-interface ApiServiceSenadoExervicio {
-    @GET("https://legis.senado.leg.br/dadosabertos/senador/lista/atual.json")
-    fun getSenado(): Call<SenadorDataClassExercicio>
-}
-
 interface ApiServiceLegislatura {
     @GET("https://raw.githubusercontent.com/leandroleo4916/API_SENADO/master/apiLeg{leg}")
     fun getLegislatura(

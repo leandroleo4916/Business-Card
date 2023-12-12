@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.utils
 
 import android.os.Environment
 import br.com.dio.businesscard.ui.dataclass.Senador

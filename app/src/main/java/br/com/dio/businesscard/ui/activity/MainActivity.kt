@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.activity
 
 import android.Manifest
 import android.content.Intent
@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import br.com.dio.businesscard.databinding.ActivityMainBinding
 import br.com.dio.businesscard.ui.dataclass.*
+import br.com.dio.businesscard.ui.model.CamaraViewModel
 import br.com.dio.businesscard.ui.remote.ApiServiceDeputadoMain
 import br.com.dio.businesscard.ui.remote.ApiServiceIdDespesas
 import br.com.dio.businesscard.ui.remote.Retrofit

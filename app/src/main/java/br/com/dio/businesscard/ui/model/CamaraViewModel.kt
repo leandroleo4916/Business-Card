@@ -1,4 +1,4 @@
-package br.com.dio.businesscard.ui
+package br.com.dio.businesscard.ui.model
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel

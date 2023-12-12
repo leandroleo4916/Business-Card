@@ -1,9 +1,11 @@
 package br.com.dio.businesscard.ui.di
 
-import br.com.dio.businesscard.ui.*
+import br.com.dio.businesscard.ui.model.CamaraViewModel
+import br.com.dio.businesscard.ui.model.DespesasViewModel
 import br.com.dio.businesscard.ui.remote.*
 import br.com.dio.businesscard.ui.repository.IdDespesasRepository
 import br.com.dio.businesscard.ui.repository.SearchRepository
+import br.com.dio.businesscard.ui.utils.DeleteAccent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -47,8 +49,9 @@ val viewModelModule = module { viewModel { CamaraViewModel(get()) } }
 val viewModelDespesas = module { viewModel { DespesasViewModel(get()) } }
 
 val repositorySearch = module { single { SearchRepository(get()) } }
+val deleteAccent = module { factory { DeleteAccent() } }
 val repositoryDespesasDeputado = module { single { IdDespesasRepository(get()) } }
 
 val appModules = listOf( retrofitModule, viewModelModule, repositorySearch, viewModelDespesas,
-        repositoryDespesasDeputado
+        repositoryDespesasDeputado, deleteAccent
 )

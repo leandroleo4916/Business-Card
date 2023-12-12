@@ -16,7 +16,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BusinessCard">
-        <activity android:name=".ui.MainActivity"
+        <activity android:name=".ui.activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,11 +24,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.SenadoActivity"
-            android:exported="true">
-        </activity>
-        <activity
-            android:name=".ui.SenadoActivity2"
+            android:name=".ui.activity.SenadoActivity"
             android:exported="true">
         </activity>
     </application>
