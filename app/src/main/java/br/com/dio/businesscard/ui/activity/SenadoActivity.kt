@@ -35,6 +35,7 @@ class SenadoActivity : AppCompatActivity() {
     private var listNoteApi: ArrayList<String> = arrayListOf()
 
     private var listRankingGeral: ArrayList<SenadorRanking> = arrayListOf()
+    private var listRankingListAno: ArrayList<SenadorRanking> = arrayListOf()
     private var listRankingAno: ArrayList<String> = arrayListOf()
     private var totalParlamentarAno = 0
 
@@ -101,8 +102,7 @@ class SenadoActivity : AppCompatActivity() {
         }
     }
 
-    //----------------------------------------------------------------------------------------//
-
+    // Busca lista de senadores por legislatura
     private fun observer() {
 
         val retrofit = Retrofit.createService(ApiServiceLegislatura::class.java)
@@ -144,7 +144,7 @@ class SenadoActivity : AppCompatActivity() {
         })
     }
 
-    // Função une lista de senadores de uma legislatura anterior e atual
+    // Une lista de senadores da lesgislatura 54 a 57
     private fun uneListaSenadores(){
 
         listSenadoresAdded =
@@ -156,6 +156,7 @@ class SenadoActivity : AppCompatActivity() {
         else observerGasto()
     }
 
+    // Busca gasto do ano 2011 a 2013
     private fun observerGasto() {
 
         val retrofit = Retrofit.createService(ApiServiceSenado::class.java)
@@ -199,22 +200,28 @@ class SenadoActivity : AppCompatActivity() {
         })
     }
 
+    // Adiciona note para cada senador
     private fun addAllNotesPerSenador(){
 
         val listRemove: MutableList<SenadoDataClass> = arrayListOf()
         var listIndex: MutableList<SenadoDataClass> = arrayListOf()
 
         listGastoGeral.forEach {
+            calcValueNotes(it.tipoDespesa, it.valorReembolsado.toInt())
             listRemove.add(it)
         }
 
         for (senador in listSenadoresAdded){
             val nome = senador.identificacaoParlamentar.nomeParlamentar.lowercase()
+            var valorNota = 0
             for (note in listRemove){
                 if (nome == note.nomeSenador.lowercase()){
+                    valorNota += note.valorReembolsado.toInt()
                     addNoteParlamentarToListAno(note)
                     listIndex.add(note)
                 }
+                addSenadorRankingAno(senador, note.valorReembolsado.toInt())
+                addParlamentarToListRankingGeral(senador, note.valorReembolsado.toInt())
             }
 
             listRemove.removeAll(listIndex)
@@ -224,6 +231,44 @@ class SenadoActivity : AppCompatActivity() {
                 val nomeFormat = deleteAccent.deleteAccent(nome)
                 recNoteParlamentar(nomeFormat)
             }
+        }
+    }
+
+    //Calcula ranking por ano
+    private fun addSenadorRankingAno(parlamentar: Parlamentar, note: Int) {
+
+        parlamentar.identificacaoParlamentar.run {
+            if (listRankingListAno.isNotEmpty()) {
+                val nome1 = deleteAccent.deleteAccent(this.nomeParlamentar)
+                var contain = false
+
+                listRankingListAno.forEach {
+                    val nome2 = deleteAccent.deleteAccent(it.nome)
+                    if (nome1 == nome2) {
+                        it.gasto += note
+                        contain = true
+                    }
+                }
+                if (!contain) addSenadorListRankingAno(parlamentar, note)
+                else contain = false
+
+            }
+            else addSenadorListRankingAno(parlamentar, note)
+        }
+    }
+
+    private fun addSenadorListRankingAno(parlamentar: Parlamentar, note: Int) {
+        parlamentar.identificacaoParlamentar.run {
+            listRankingListAno.add(
+                SenadorRanking(
+                    codigoParlamentar,
+                    nomeParlamentar,
+                    urlFotoParlamentar ?: "",
+                    note,
+                    siglaPartidoParlamentar ?: "",
+                    parlamentar.mandatos.mandato.ufParlamentar
+                )
+            )
         }
     }
 
@@ -260,8 +305,8 @@ class SenadoActivity : AppCompatActivity() {
             }
             if (totalParlamentarAno != 0) {
                 binding.textTotalGeralSenador.text = "$n1 - $totalParlamentarAno"
-                addParlamentarToListRankingAno(it)
-                addParlamentarToListRankingGeral(it)
+                //addParlamentarToListRankingAno(it)
+                //addParlamentarToListRankingGeral(it)
                 recNoteParlamentar(n1)
             }
         }
@@ -270,6 +315,7 @@ class SenadoActivity : AppCompatActivity() {
         recGeral()
     }
 
+    // Adiciona nota de cada senador
     private fun addNoteParlamentarToListAno(it: SenadoDataClass) {
         listNoteApi.add("""{"ano":"${it.ano}", "mes":"${it.mes}", "senador":"${it.nomeSenador}", 
                             "tipoDespesa":"${it.tipoDespesa}", "cnpjCpf":"${it.cpfCnpj}", "fornecedor":"${it.fornecedor}", 
@@ -277,6 +323,7 @@ class SenadoActivity : AppCompatActivity() {
                             "valorReembolsado":"${it.valorReembolsado}", "codDocumento":"${it.id}"}""".trimMargin())
     }
 
+    // Calcula notas por tipo de gasto
     private fun calcValueNotes(note: String, valor: Int) {
 
         when (note) {
@@ -313,16 +360,15 @@ class SenadoActivity : AppCompatActivity() {
                 outrosG += valor
             }
         }
-        totalGeralG
         totalParlamentarAno += valor
         totalAno += valor
     }
 
-    private fun addParlamentarToListRankingAno(parlamentar: Parlamentar) {
+    private fun addParlamentarToListRankingAno(parlamentar: Parlamentar, valorNote: Int) {
         parlamentar.identificacaoParlamentar.run {
             listRankingAno.add(
                 """{"id":"${this.codigoParlamentar}", "nome":"${this.nomeParlamentar}", 
-                    |"foto":"${this.urlFotoParlamentar ?: ""}", "gasto":"$totalParlamentarAno", 
+                    |"foto":"${this.urlFotoParlamentar ?: ""}", "gasto":"$valorNote", 
                     |"partido":"${this.siglaPartidoParlamentar}", "estado":"${this.ufParlamentar}"}""".trimMargin()
             )
             binding.textRanking.text = "$countRanking adicionado no ranking"
@@ -330,7 +376,8 @@ class SenadoActivity : AppCompatActivity() {
         }
     }
 
-    private fun addParlamentarToListRankingGeral(parlamentar: Parlamentar) {
+    //Calcula ranking geral
+    private fun addParlamentarToListRankingGeral(parlamentar: Parlamentar, note: Int) {
         parlamentar.identificacaoParlamentar.run {
 
             if (listGastoGeral.isNotEmpty()) {
@@ -340,39 +387,34 @@ class SenadoActivity : AppCompatActivity() {
                 listRankingGeral.forEach {
                     val n2 = deleteAccent.deleteAccent(it.nome)
                     if (n1 == n2) {
-                        it.gasto += totalParlamentarAno
+                        it.gasto += note
                         contain = true
                     }
                 }
-                if (!contain) {
-                    listRankingGeral.add(
-                        SenadorRanking(
-                            this.codigoParlamentar,
-                            this.nomeParlamentar,
-                            this.urlFotoParlamentar ?: "",
-                            totalParlamentarAno,
-                            this.siglaPartidoParlamentar ?: "",
-                            parlamentar.mandatos.mandato.ufParlamentar
-                        )
-                    )
-                } else {
-                    contain = false
-                }
-            } else {
-                listRankingGeral.add(
-                    SenadorRanking(
-                        this.codigoParlamentar,
-                        this.nomeParlamentar,
-                        this.urlFotoParlamentar ?: "",
-                        totalParlamentarAno,
-                        this.siglaPartidoParlamentar ?: "",
-                        parlamentar.mandatos.mandato.ufParlamentar
-                    )
-                )
+                if (!contain) addSenadorListRankingGeral(parlamentar, note)
+                else contain = false
             }
+            else addSenadorListRankingGeral(parlamentar, note)
         }
     }
 
+    private fun addSenadorListRankingGeral(parlamentar: Parlamentar, note: Int) {
+
+        parlamentar.identificacaoParlamentar.run {
+            listRankingGeral.add(
+                SenadorRanking(
+                    this.codigoParlamentar,
+                    this.nomeParlamentar,
+                    this.urlFotoParlamentar ?: "",
+                    note,
+                    this.siglaPartidoParlamentar ?: "",
+                    parlamentar.mandatos.mandato.ufParlamentar
+                )
+            )
+        }
+    }
+
+    // Limpa valores ao terminar contagem das nota por ano
     private fun clearValuesGastosAno(){
         listRankingAno = arrayListOf()
         numberNoteAno = 0
