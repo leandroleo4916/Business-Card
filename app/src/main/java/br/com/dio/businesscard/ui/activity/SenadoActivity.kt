@@ -24,7 +24,6 @@ class SenadoActivity : AppCompatActivity() {
 
     private val binding by lazy { ActivitySenadoBinding.inflate(layoutInflater) }
     private val deleteAccent: DeleteAccent by inject()
-    private var sizeTotalProcess = 0
     private var countRanking = 0
     private var anoSoma = 2011
     private var tentativa = 0
@@ -113,6 +112,7 @@ class SenadoActivity : AppCompatActivity() {
                 when (despesas.code()) {
                     200 -> {
                         println("Baixou lista de senadores")
+                        binding.textProcessoSen.text = "Baixou lista de senadores"
                         if (despesas.body() != null) {
                             listSenadores = despesas.body()!!.listaParlamentarLegislatura
                                 .parlamentares.parlamentar as ArrayList<Parlamentar>
@@ -147,6 +147,8 @@ class SenadoActivity : AppCompatActivity() {
     // Une lista de senadores da lesgislatura 54 a 57
     private fun uneListaSenadores(){
 
+        println("Unindo lista de senadores...")
+        binding.textProcessoSen.text = "Baixou lista de senadores"
         listSenadoresAdded =
             if (listSenadoresAdded.isEmpty()) listSenadores
             else (listSenadores + listSenadoresAdded).distinct() as ArrayList<Parlamentar>
@@ -156,9 +158,11 @@ class SenadoActivity : AppCompatActivity() {
         else observerGasto()
     }
 
-    // Busca gasto do ano 2011 a 2013
+    // Busca gasto do ano 2011 a 2023
     private fun observerGasto() {
 
+        println("Baixando lista de gastos ano: $anoSoma ...")
+        binding.textProcessoSen.text = "Baixando lista de gastos ano: $anoSoma ..."
         val retrofit = Retrofit.createService(ApiServiceSenado::class.java)
         val call: Call<ListSenado> = retrofit.getDataSenado(anoSoma.toString())
 
@@ -166,8 +170,9 @@ class SenadoActivity : AppCompatActivity() {
             override fun onResponse(call: Call<ListSenado>, despesas: Response<ListSenado>) {
                 when (despesas.code()) {
                     200 -> {
-                        println("Baixou lista de gasto")
+                        println("Baixou lista de gasto ano: $anoSoma")
                         println("--------------------------------------------")
+                        binding.textProcessoSen.text = "Baixou lista de gasto ano: $anoSoma"
                         if (despesas.body() != null) {
                             listGastoGeral = despesas.body()!!
                             numberNoteAno += despesas.body()!!.size
@@ -213,6 +218,7 @@ class SenadoActivity : AppCompatActivity() {
 
         for (senador in listSenadoresAdded){
             val nome = senador.identificacaoParlamentar.nomeParlamentar.lowercase()
+            binding.textNomeEGastoSenador.text = nome
             var valorNota = 0
             for (note in listRemove){
                 if (nome == note.nomeSenador.lowercase()){
@@ -232,6 +238,9 @@ class SenadoActivity : AppCompatActivity() {
                 recNoteParlamentar(nomeFormat)
             }
         }
+        recAno()
+        recRankingAno()
+        recGeral()
     }
 
     //Calcula ranking por ano
@@ -270,49 +279,8 @@ class SenadoActivity : AppCompatActivity() {
                 )
             )
         }
-    }
-
-    private fun addParlamentarToListRankingAno2(parlamentar: Parlamentar) {
-        parlamentar.identificacaoParlamentar.run {
-            listRankingAno.add(
-                """{"id":"${this.codigoParlamentar}", "nome":"${this.nomeParlamentar}", 
-                    |"foto":"${this.urlFotoParlamentar ?: ""}", "gasto":"$totalParlamentarAno", 
-                    |"partido":"${this.siglaPartidoParlamentar}", "estado":"${this.ufParlamentar}"}""".trimMargin()
-            )
-            binding.textRanking.text = "$countRanking adicionado no ranking"
-            countRanking += 1
-        }
-    }
-
-    private fun orderList(){
-        println("Iniciou ordenação da lista")
-        listSenadores.forEach {
-
-            println("Pegando notas de ${it.identificacaoParlamentar.nomeParlamentar}")
-            val n1 = deleteAccent.deleteAccent(it.identificacaoParlamentar.nomeParlamentar)
-            binding.textTotalProcessoSenador.text = "$sizeTotalProcess Deputados"
-            binding.textNomeEGastoSenador.text = "Contando notas de $n1"
-            sizeTotalProcess += 1
-
-            for (item in listGastoGeral){
-                val n2 = deleteAccent.deleteAccent(item.nomeSenador)
-                if (n1 == n2){
-                    // Gasto por ano
-                    addNoteParlamentarToListAno(item)
-                    // Calcula gasto
-                    calcValueNotes(item.tipoDespesa, item.valorReembolsado.toInt())
-                }
-            }
-            if (totalParlamentarAno != 0) {
-                binding.textTotalGeralSenador.text = "$n1 - $totalParlamentarAno"
-                //addParlamentarToListRankingAno(it)
-                //addParlamentarToListRankingGeral(it)
-                recNoteParlamentar(n1)
-            }
-        }
-        recAno()
-        recRankingAno()
-        recGeral()
+        binding.textRanking.text = "$countRanking adicionado no ranking"
+        countRanking += 1
     }
 
     // Adiciona nota de cada senador
@@ -362,18 +330,6 @@ class SenadoActivity : AppCompatActivity() {
         }
         totalParlamentarAno += valor
         totalAno += valor
-    }
-
-    private fun addParlamentarToListRankingAno(parlamentar: Parlamentar, valorNote: Int) {
-        parlamentar.identificacaoParlamentar.run {
-            listRankingAno.add(
-                """{"id":"${this.codigoParlamentar}", "nome":"${this.nomeParlamentar}", 
-                    |"foto":"${this.urlFotoParlamentar ?: ""}", "gasto":"$valorNote", 
-                    |"partido":"${this.siglaPartidoParlamentar}", "estado":"${this.ufParlamentar}"}""".trimMargin()
-            )
-            binding.textRanking.text = "$countRanking adicionado no ranking"
-            countRanking += 1
-        }
     }
 
     //Calcula ranking geral
@@ -430,10 +386,11 @@ class SenadoActivity : AppCompatActivity() {
 
     // Grava notas de cada Parlamentar
     private fun recNoteParlamentar(nome: String){
-        println("Iniciou gravação notas $nome")
+        println("Iniciou gravação notas $nome ...")
+        binding.textProcessoSen.text = "Iniciou gravação notas $nome ..."
         try {
             val total = """{"gastosSenador": $listNoteApi}"""
-            val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenado/$anoSoma/$nome")
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoPorSenador/$anoSoma/$nome")
             val fos = FileOutputStream(arq)
             fos.write(total.toByteArray())
             fos.flush()
@@ -443,11 +400,13 @@ class SenadoActivity : AppCompatActivity() {
             listNoteApi = arrayListOf()
             println("Gravou gasto $nome - $anoSoma")
             println("--------------------------------------------")
+            binding.textProcessoSen.text = "Gravou gasto $nome - $anoSoma"
         } catch (e: java.lang.Exception) { }
     }
 
     private fun recAno() {
-        println("Iniciou gravação de gastos $anoSoma")
+        println("Iniciou gravação de gastos $anoSoma ...")
+        binding.textProcessoSen.text = "Iniciou gravação de gastos $anoSoma ..."
         try {
             val listAno = """{$totalAnoV: "$totalAno", $numberNoteAnoV: "$numberNoteAno", 
             |$aluguelV: "$aluguelA", $divulgacaoV: "$divulgacaoA", $contratacaoV: "$contratacaoA", 
@@ -455,13 +414,14 @@ class SenadoActivity : AppCompatActivity() {
             |$segurancaV: "$segurancaA", $outrosV: "$outrosA"}""".trimMargin()
 
             val total = """{"gastoGeral": $listAno}"""
-            val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenadoAno/$anoSoma/$anoSoma")
+            val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenadoAno/$anoSoma")
             val fos = FileOutputStream(arq)
             fos.write(total.toByteArray())
             fos.flush()
             fos.close()
 
             println("Gravou gasto $anoSoma")
+            binding.textProcessoSen.text = "Gravou gasto $anoSoma"
         } catch (e: java.lang.Exception) { }
     }
 
@@ -475,10 +435,13 @@ class SenadoActivity : AppCompatActivity() {
             fos.close()
 
             println("Gravou ranking $anoSoma")
+            binding.textProcessoSen.text = "Gravou ranking $anoSoma"
         } catch (e: java.lang.Exception) { }
         listRankingAno = arrayListOf()
         clearValuesGastosAno()
-        observer()
+        println("Limpou valores Gasto $anoSoma")
+        println("-----------------------------")
+        binding.textProcessoSen.text = "Limpou valores Gasto $anoSoma"
     }
 
     private fun recGeral(){
@@ -490,13 +453,14 @@ class SenadoActivity : AppCompatActivity() {
                 |$segurancaV: "$segurancaG", $outrosV: "$outrosG"}""".trimMargin()
 
                 val total = """{"totalGeral": $listAno}"""
-                val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenado/geralAll")
+                val arq = File(Environment.getExternalStorageDirectory(), "/gastoSenadoGeral")
                 val fos = FileOutputStream(arq)
                 fos.write(total.toByteArray())
                 fos.flush()
                 fos.close()
 
                 println("Gravou gasto geral")
+                binding.textProcessoSen.text = "Gravou gasto geral"
             } catch (e: java.lang.Exception) { }
 
             try {
@@ -507,19 +471,22 @@ class SenadoActivity : AppCompatActivity() {
                     |"estado":"${it.estado}"}""".trimMargin())
                 }
                 val total = """{"rankingGeral": $listRankingAll}"""
-                val arq = File(Environment.getExternalStorageDirectory(), "/rankingSenado/geralAll")
+                val arq = File(Environment.getExternalStorageDirectory(), "/rankingSenadoGeral")
                 val fos = FileOutputStream(arq)
                 fos.write(total.toByteArray())
                 fos.flush()
                 fos.close()
 
                 println("Gravou ranking geral")
+                binding.textProcessoSen.text = "Gravou ranking geral"
             } catch (e: java.lang.Exception) { }
         }
         else {
             anoSoma += 1
             binding.textAno.text = "$anoSoma"
+            observerGasto()
             println("Ano $anoSoma")
+            println("---------------------------")
         }
     }
 }
